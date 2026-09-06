@@ -1,0 +1,376 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(uuid()) @db.Uuid
+  email             String    @unique
+  name              String
+  organization      String?
+  passwordHash      String    @map("password_hash")
+  status            String    @default("active")
+  failedLoginCount  Int       @default(0) @map("failed_login_count")
+  lockedUntil       DateTime? @map("locked_until")
+  lastLoginAt       DateTime? @map("last_login_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  dids              Did[]
+  authTokens        AuthToken[]
+  userRoles         UserRole[]       @relation("UserToRole")
+  roleAssignments   UserRole[]       @relation("AssignedByUser")
+  roleRevocations   UserRole[]       @relation("RevokedByUser")
+  createdAssets     Asset[]
+  ownedAssets       OwnershipRecord[] @relation("OwnerUser")
+  transferredAssets OwnershipRecord[] @relation("FromUser")
+  auditEvents       AuditEvent[]     @relation("ActorUser")
+  verifications     VerificationRecord[]
+  notifications     Notification[]
+  idempotencyKeys   IdempotencyKey[]
+  managerScopes     ManagerAssetScope[] @relation("ManagerUser")
+  grantedScopes     ManagerAssetScope[] @relation("GrantedByUser")
+  updatedPermissions RolePermission[]
+
+  @@index([email])
+  @@index([status])
+  @@map("users")
+}
+
+model KeyStore {
+  id           String   @id @default(uuid()) @db.Uuid
+  didId        String   @map("did_id") @db.Uuid
+  encryptedKey String   @map("encrypted_key")
+  keyStatus    String   @default("active") @map("key_status")
+  createdAt    DateTime @default(now()) @map("created_at")
+  rotatedAt    DateTime? @map("rotated_at")
+
+  did          Did      @relation(fields: [didId], references: [id])
+
+  @@index([didId])
+  @@map("key_store")
+}
+
+model NonceStore {
+  nonce     String   @id
+  did       String
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([expiresAt])
+  @@index([did])
+  @@map("nonce_store")
+}
+
+model Did {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  did         String    @unique
+  address     String    @unique
+  publicKey   String    @map("public_key")
+  status      String    @default("active")
+  method      String    @default("ethr")
+  chainId     Int       @map("chain_id")
+  onChainTx   String?   @map("on_chain_tx")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  suspendedAt DateTime? @map("suspended_at")
+  revokedAt   DateTime? @map("revoked_at")
+
+  user        User      @relation(fields: [userId], references: [id])
+  keyStore    KeyStore[]
+  didDocuments DidDocument[]
+  ownedAssets OwnershipRecord[]
+
+  @@index([userId])
+  @@index([address])
+  @@index([status])
+  @@map("dids")
+}
+
+model DidDocument {
+  id        String   @id @default(uuid()) @db.Uuid
+  didId     String   @map("did_id") @db.Uuid
+  document  Json
+  version   Int      @default(1)
+  isCurrent Boolean  @default(true) @map("is_current")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  did       Did      @relation(fields: [didId], references: [id])
+
+  @@index([didId])
+  @@map("did_documents")
+}
+
+model AuthToken {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  tokenHash  String    @unique @map("token_hash")
+  deviceInfo String?   @map("device_info")
+  ipAddress  String?   @map("ip_address")
+  expiresAt  DateTime  @map("expires_at")
+  revokedAt  DateTime? @map("revoked_at")
+  usedAt     DateTime? @map("used_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@index([userId])
+  @@map("auth_tokens")
+}
+
+model Role {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @unique
+  displayName  String   @map("display_name")
+  description  String?
+  isSystem     Boolean  @default(false) @map("is_system")
+  onChainRole  String?  @map("on_chain_role")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  userRoles    UserRole[]
+  permissions  RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  domain      String
+  description String
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String   @map("role_id") @db.Uuid
+  permissionId String   @map("permission_id") @db.Uuid
+  granted      Boolean  @default(true)
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  updatedBy    String?  @map("updated_by") @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  updater    User?      @relation(fields: [updatedBy], references: [id], onDelete: SetNull)
+
+  @@id([roleId, permissionId])
+  @@index([roleId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  roleId     String    @map("role_id") @db.Uuid
+  assignedBy String?   @map("assigned_by") @db.Uuid
+  assignedAt DateTime  @default(now()) @map("assigned_at")
+  revokedAt  DateTime? @map("revoked_at")
+  revokedBy  String?   @map("revoked_by") @db.Uuid
+
+  user     User  @relation("UserToRole", fields: [userId], references: [id], onDelete: Cascade)
+  role     Role  @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  assigner User? @relation("AssignedByUser", fields: [assignedBy], references: [id], onDelete: SetNull)
+  revoker  User? @relation("RevokedByUser", fields: [revokedBy], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@map("user_roles")
+}
+
+model ManagerAssetScope {
+  id              String    @id @default(uuid()) @db.Uuid
+  managerUserId   String    @map("manager_user_id") @db.Uuid
+  assetId         String?   @map("asset_id") @db.Uuid
+  assetCategory   String?   @map("asset_category")
+  isGlobal        Boolean   @default(false) @map("is_global")
+  grantedBy       String?   @map("granted_by") @db.Uuid
+  grantedAt       DateTime  @default(now()) @map("granted_at")
+  revokedAt       DateTime? @map("revoked_at")
+
+  manager   User   @relation("ManagerUser", fields: [managerUserId], references: [id], onDelete: Cascade)
+  granter   User?  @relation("GrantedByUser", fields: [grantedBy], references: [id], onDelete: SetNull)
+  asset     Asset? @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([managerUserId])
+  @@map("manager_asset_scope")
+}
+
+model Asset {
+  id              String   @id @default(uuid()) @db.Uuid
+  assetCode       String   @unique @map("asset_code")
+  name            String
+  category        String
+  description     String?
+  location        String?
+  status          String   @default("unassigned")
+  tokenId         BigInt?  @unique @map("token_id")
+  chainId         Int?     @map("chain_id")
+  contractAddress String?  @map("contract_address")
+  metadataHash    String?  @map("metadata_hash")
+  mintTxHash      String?  @map("mint_tx_hash")
+  createdBy       String   @map("created_by") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  creator          User               @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  metadata         AssetMetadata[]
+  ownershipRecords OwnershipRecord[]
+  managerScopes    ManagerAssetScope[]
+
+  @@index([status])
+  @@index([category])
+  @@index([tokenId])
+  @@map("assets")
+}
+
+model AssetMetadata {
+  id        String   @id @default(uuid()) @db.Uuid
+  assetId   String   @map("asset_id") @db.Uuid
+  key       String
+  value     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  asset     Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([assetId, key])
+  @@map("asset_metadata")
+}
+
+model OwnershipRecord {
+  id            String   @id @default(uuid()) @db.Uuid
+  assetId       String   @map("asset_id") @db.Uuid
+  ownerDid      String   @map("owner_did")
+  ownerUserId   String?  @map("owner_user_id") @db.Uuid
+  fromDid       String?  @map("from_did")
+  fromUserId    String?  @map("from_user_id") @db.Uuid
+  action        String   @default("mint")
+  txHash        String?  @unique @map("tx_hash")
+  blockNumber   BigInt?  @map("block_number")
+  isCurrent     Boolean  @default(true) @map("is_current")
+  transferredAt DateTime @default(now()) @map("transferred_at")
+
+  asset     Asset  @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  owner     User?  @relation("OwnerUser", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  fromUser  User?  @relation("FromUser", fields: [fromUserId], references: [id], onDelete: SetNull)
+  didRecord Did?   @relation(fields: [ownerDid], references: [did])
+
+  @@index([assetId])
+  @@index([ownerDid])
+  @@map("ownership_records")
+}
+
+model AuditEvent {
+  id             String   @id @default(uuid()) @db.Uuid
+  sequenceNo     BigInt   @unique @default(autoincrement()) @map("sequence_no")
+  eventType      String   @map("event_type")
+  severity       String   @default("info")
+  actorUserId    String?  @map("actor_user_id") @db.Uuid
+  actorDid       String?  @map("actor_did")
+  actorRole      String?  @map("actor_role")
+  entityType     String?  @map("entity_type")
+  entityId       String?  @map("entity_id")
+  action         String
+  payload        Json?
+  status         String   @default("success")
+  txHash         String?  @map("tx_hash")
+  ipAddress      String?  @map("ip_address")
+  prevEventHash  String?  @map("prev_event_hash")
+  eventHash      String   @unique @map("event_hash")
+  anchorBatchId  String?  @map("anchor_batch_id")
+  anchoredTxHash String?  @map("anchored_tx_hash")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  actor          User?    @relation("ActorUser", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([eventType])
+  @@index([actorUserId])
+  @@index([entityType, entityId])
+  @@index([createdAt(sort: Desc)])
+  @@index([severity])
+  @@map("audit_events")
+}
+
+model TxCache {
+  txHash          String   @id @map("tx_hash")
+  blockNumber     BigInt?  @map("block_number")
+  blockTimestamp  DateTime? @map("block_timestamp")
+  chainId         Int?     @map("chain_id")
+  fromAddress     String?  @map("from_address")
+  toAddress       String?  @map("to_address")
+  contractAddress String?  @map("contract_address")
+  contractName    String?  @map("contract_name")
+  functionName    String?  @map("function_name")
+  decodedInput    Json?    @map("decoded_input")
+  decodedLogs     Json?    @map("decoded_logs")
+  status          String?
+  gasUsed         BigInt?  @map("gas_used")
+  confirmations   Int?     @default(0)
+  cachedAt        DateTime @default(now()) @map("cached_at")
+
+  @@index([blockNumber])
+  @@index([contractAddress])
+  @@map("tx_cache")
+}
+
+model VerificationRecord {
+  id                   String   @id @default(uuid()) @db.Uuid
+  type                 String
+  subjectId            String   @map("subject_id")
+  verifierUserId       String?  @map("verifier_user_id") @db.Uuid
+  result               String
+  details              Json?
+  blockchainConfirmed  Boolean? @map("blockchain_confirmed")
+  chainBlockNumber     BigInt?  @map("chain_block_number")
+  verifiedAt           DateTime @default(now()) @map("verified_at")
+
+  verifier             User?    @relation(fields: [verifierUserId], references: [id], onDelete: SetNull)
+
+  @@index([subjectId])
+  @@index([type])
+  @@map("verification_records")
+}
+
+model Notification {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  type       String
+  title      String
+  body       String?
+  entityType String?  @map("entity_type")
+  entityId   String?  @map("entity_id")
+  isRead     Boolean  @default(false) @map("is_read")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model IdempotencyKey {
+  key            String   @map("key")
+  endpoint       String
+  userId         String?  @map("user_id") @db.Uuid
+  status         String   @default("pending")
+  responseStatus Int?     @map("response_status")
+  responseBody   Json?    @map("response_body")
+  createdAt      DateTime @default(now()) @map("created_at")
+  completedAt    DateTime? @map("completed_at")
+
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@id([key, endpoint])
+  @@map("idempotency_keys")
+}
