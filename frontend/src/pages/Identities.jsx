@@ -133,7 +133,68 @@ const CreateIdentityModal = ({ onClose, onSuccess }) => {
   );
 };
 
-const ActionsMenu = ({ identity, onUpdate }) => {
+const IdentityDetailsModal = ({ identity, onClose }) => {
+  if (!identity) return null;
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <span className="modal-title">Identity Details</span>
+          <button className="modal-close" onClick={onClose}><X size={18} /></button>
+        </div>
+        <div className="modal-body">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div>
+              <div className="form-label">User Name</div>
+              <div style={{ fontWeight: 500 }}>{identity.user?.name || 'N/A'}</div>
+            </div>
+            <div>
+              <div className="form-label">DID</div>
+              <div className="mono" style={{ fontSize: '0.875rem' }}>{identity.did}</div>
+            </div>
+            {identity.address && (
+              <div>
+                <div className="form-label">Ethereum Address</div>
+                <div className="mono" style={{ fontSize: '0.875rem' }}>{identity.address}</div>
+              </div>
+            )}
+            <div>
+              <div className="form-label">Email</div>
+              <div>{identity.user?.email || 'N/A'}</div>
+            </div>
+            <div>
+              <div className="form-label">Organization</div>
+              <div>{identity.user?.organization || 'N/A'}</div>
+            </div>
+            <div>
+              <div className="form-label">Roles</div>
+              <div>
+                {identity.user?.userRoles?.map(ur => (
+                  <span key={ur.role.name} className={`role-chip-${ur.role.name}`} style={{ marginRight: 4 }}>
+                    {ur.role.displayName || ur.role.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="form-label">Status</div>
+              <div><span className={`badge ${statusBadge(identity.status)}`}>{identity.status}</span></div>
+            </div>
+            <div>
+              <div className="form-label">Created At</div>
+              <div>{new Date(identity.createdAt).toLocaleString()}</div>
+            </div>
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-ghost" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ActionsMenu = ({ identity, onUpdate, onView }) => {
   const [open, setOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const isAdmin = useAuthStore(s => s.user?.roles?.includes('admin'));
@@ -169,7 +230,7 @@ const ActionsMenu = ({ identity, onUpdate }) => {
           minWidth: 160
         }}>
           {[
-            { label: 'View Details', action: null, fn: () => alert(`DID: ${identity.did}\nAddress: ${identity.address}\nStatus: ${identity.status}`) },
+            { label: 'View Details', action: null, fn: () => { setOpen(false); onView(); } },
             identity.status === 'active'
               ? { label: 'Suspend', action: 'suspend', fn: () => doAction('suspend') }
               : identity.status === 'suspended'
@@ -210,6 +271,7 @@ export const Identities = () => {
   const [page, setPage] = React.useState(1);
   const [total, setTotal] = React.useState(0);
   const [showCreate, setShowCreate] = React.useState(false);
+  const [detailIdentity, setDetailIdentity] = React.useState(null);
   const user = useAuthStore(s => s.user);
   const canCreate = user?.roles?.includes('admin') || user?.roles?.includes('manager');
   const LIMIT = 10;
@@ -358,7 +420,7 @@ export const Identities = () => {
                       {new Date(identity.createdAt).toLocaleDateString()}
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <ActionsMenu identity={identity} onUpdate={fetchIdentities} />
+                      <ActionsMenu identity={identity} onUpdate={fetchIdentities} onView={() => setDetailIdentity(identity)} />
                     </td>
                   </tr>
                 ))
@@ -385,6 +447,12 @@ export const Identities = () => {
         <CreateIdentityModal
           onClose={() => setShowCreate(false)}
           onSuccess={() => { fetchIdentities(); }}
+        />
+      )}
+      {detailIdentity && (
+        <IdentityDetailsModal 
+          identity={detailIdentity} 
+          onClose={() => setDetailIdentity(null)} 
         />
       )}
     </div>

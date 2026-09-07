@@ -50,7 +50,7 @@ export const Settings = () => {
                   width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem',
                   padding: '0.5625rem 0.75rem', borderRadius: 6, border: 'none',
                   background: activeTab === tab.id ? 'var(--accent-light)' : 'transparent',
-                  color: activeTab === tab.id ? '#60a5fa' : 'var(--text-secondary)',
+                  color: activeTab === tab.id ? 'var(--accent)' : 'var(--text-secondary)',
                   fontFamily: 'inherit', fontSize: '0.875rem', fontWeight: 500,
                   cursor: 'pointer', textAlign: 'left', transition: 'background 0.1s',
                   marginBottom: 2

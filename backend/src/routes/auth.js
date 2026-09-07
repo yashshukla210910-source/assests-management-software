@@ -183,4 +183,106 @@ router.post('/did-challenge', async (req, res, next) => {
   }
 });
 
+/**
+ * @route POST /api/v1/auth/did-verify
+ * @desc Verify DID signature and login
+ */
+router.post('/did-verify', async (req, res, next) => {
+  try {
+    const { did, signature, nonce } = req.body;
+    if (!did || !signature || !nonce) return error(res, 'DID, signature, and nonce are required', 400);
+
+    const nonceRecord = await prisma.nonceStore.findFirst({
+      where: { did, nonce, usedAt: null, expiresAt: { gt: new Date() } }
+    });
+
+    if (!nonceRecord) {
+      return error(res, 'Invalid or expired challenge', 401, 'INVALID_CHALLENGE');
+    }
+
+    // Retrieve DID Document to get public key
+    const didEntity = await prisma.did.findUnique({
+      where: { did },
+      include: {
+        user: {
+          include: {
+            userRoles: {
+              where: { revokedAt: null },
+              include: { role: true }
+            }
+          }
+        }
+      }
+    });
+
+    if (!didEntity || !didEntity.user || didEntity.user.status !== 'active') {
+      return error(res, 'Identity not found or inactive', 404);
+    }
+
+    // In a production setup, we would verify the signature against the public key
+    // For this SIH demo, if the keys are custodial, the frontend might have passed a signature.
+    // Let's perform a basic ECDSA/Ethereum signature verification here.
+    const { ethers } = require('ethers');
+    let isValid = false;
+    try {
+      // The message that was signed
+      const message = `Sign this message to authenticate with DecentraVault. Nonce: ${nonce}`;
+      const recoveredAddress = ethers.verifyMessage(message, signature);
+      if (recoveredAddress.toLowerCase() === didEntity.address.toLowerCase()) {
+        isValid = true;
+      }
+    } catch (e) {
+      console.warn("Signature verification failed:", e.message);
+    }
+
+    if (!isValid) {
+      return error(res, 'Invalid signature', 401, 'INVALID_SIGNATURE');
+    }
+
+    // Mark nonce as used
+    await prisma.nonceStore.update({
+      where: { nonce: nonceRecord.nonce },
+      data: { usedAt: new Date() }
+    });
+
+    const user = didEntity.user;
+    
+    // Update login timestamp
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { failedLoginCount: 0, lastLoginAt: new Date() }
+    });
+
+    const tokens = generateTokens(user);
+
+    // Save refresh token
+    const tokenHash = crypto.createHash('sha256').update(tokens.refreshToken).digest('hex');
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    await prisma.authToken.create({
+      data: {
+        userId: user.id,
+        tokenHash,
+        expiresAt,
+        ipAddress: req.ip,
+        deviceInfo: req.headers['user-agent']
+      }
+    });
+
+    return success(res, {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        roles: user.userRoles.map(ur => ur.role.name)
+      },
+      tokens
+    });
+
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

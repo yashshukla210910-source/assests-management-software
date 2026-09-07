@@ -27,6 +27,26 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
+  loginWithDid: async (did, signature, nonce) => {
+    try {
+      set({ isLoading: true });
+      const { data } = await api.post('/auth/did-verify', { did, signature, nonce });
+      
+      const { user, tokens } = data.data;
+      
+      localStorage.setItem('accessToken', tokens.accessToken);
+      localStorage.setItem('refreshToken', tokens.refreshToken);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      set({ user, isAuthenticated: true, isLoading: false });
+      return { success: true };
+    } catch (error) {
+      set({ isLoading: false });
+      const message = error.response?.data?.error?.message || error.message || 'DID Login failed';
+      return { success: false, error: message };
+    }
+  },
+
   logout: async () => {
     try {
       const refreshToken = localStorage.getItem('refreshToken');

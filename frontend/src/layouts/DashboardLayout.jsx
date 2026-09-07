@@ -1,25 +1,26 @@
 import React from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import api from '../utils/api';
 import {
-  LayoutDashboard, Users, Database, ShieldCheck, Activity,
-  Settings, LogOut, Bell, ChevronRight
+  LayoutDashboard, Users, Package, ShieldCheck, Activity,
+  Settings, LogOut, Bell, FileText, Key, Building2,
+  Layers, ArrowLeftRight, ChevronRight
 } from 'lucide-react';
 
+// ─── Sidebar Item ─────────────────────────────────────────────────────────────
 const SidebarItem = ({ to, icon: Icon, label, end = false }) => (
   <NavLink
     to={to}
     end={end}
-    className={({ isActive }) =>
-      `nav-item${isActive ? ' active' : ''}`
-    }
+    className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
   >
-    <Icon size={16} />
+    <Icon size={14} strokeWidth={1.75} />
     <span>{label}</span>
   </NavLink>
 );
 
+// ─── Notification Panel ───────────────────────────────────────────────────────
 const NotificationPanel = ({ onClose }) => {
   const [notifications, setNotifications] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
@@ -58,14 +59,14 @@ const NotificationPanel = ({ onClose }) => {
       </div>
       <div className="notif-list">
         {loading ? (
-          <div className="loading-row">
-            <span className="spinner-sm" style={{ borderTopColor: 'var(--accent)' }} />
+          <div className="loading-row" style={{ padding: '1.5rem' }}>
+            <span className="spinner-sm-dark" />
             Loading...
           </div>
         ) : notifications.length === 0 ? (
           <div className="notif-empty">No notifications</div>
         ) : (
-          notifications.map(n => (
+          notifications.slice(0, 8).map(n => (
             <div
               key={n.id}
               className={`notif-item${!n.isRead ? ' unread' : ''}`}
@@ -85,11 +86,30 @@ const NotificationPanel = ({ onClose }) => {
   );
 };
 
+// ─── Page Title from route ────────────────────────────────────────────────────
+const PAGE_TITLES = {
+  '/': 'Dashboard',
+  '/identities': 'Identities',
+  '/verification': 'Verification',
+  '/assets': 'Assets',
+  '/roles': 'Roles & Permissions',
+  '/audit': 'Audit Trail',
+  '/transactions': 'Transactions',
+  '/notifications': 'Notifications',
+  '/administration': 'Administration',
+  '/settings': 'Settings',
+};
+
+// ─── Dashboard Layout ─────────────────────────────────────────────────────────
 export const DashboardLayout = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showNotifs, setShowNotifs] = React.useState(false);
   const [unreadCount, setUnreadCount] = React.useState(0);
+
+  const pageTitle = PAGE_TITLES[location.pathname] || 'DecentraVault';
+  const isAdmin = user?.roles?.includes('admin');
 
   const handleLogout = async () => {
     await logout();
@@ -107,7 +127,6 @@ export const DashboardLayout = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Close notif panel on outside click
   React.useEffect(() => {
     if (!showNotifs) return;
     const handler = (e) => {
@@ -117,37 +136,46 @@ export const DashboardLayout = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, [showNotifs]);
 
-  const roleChips = user?.roles?.map(r => (
-    <span key={r} className={`role-chip-${r}`}>{r}</span>
-  ));
-
   return (
     <div className="layout-wrapper">
-      {/* Sidebar */}
+      {/* ── Sidebar ──────────────────────────────────────────────────────────── */}
       <aside className="sidebar">
+        {/* Logo */}
         <div className="sidebar-header">
           <div className="sidebar-logo">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <rect x="3" y="11" width="18" height="11" rx="2"/>
+              <path d="M7 11V7a5 5 0 0110 0v4"/>
             </svg>
           </div>
           <span className="sidebar-brand">DecentraVault</span>
         </div>
 
+        {/* Navigation */}
         <nav className="sidebar-nav">
-          <div className="nav-section-label">Main</div>
           <SidebarItem to="/" icon={LayoutDashboard} label="Dashboard" end />
-          <SidebarItem to="/identities" icon={Users} label="Identities" />
-          <SidebarItem to="/assets" icon={Database} label="Assets" />
 
-          <div className="nav-section-label">Security</div>
-          <SidebarItem to="/roles" icon={ShieldCheck} label="Access Control" />
-          <SidebarItem to="/audit" icon={Activity} label="Audit Logs" />
+          <div className="nav-section-label">Identity</div>
+          <SidebarItem to="/identities" icon={Users} label="Identities" />
+          <SidebarItem to="/verification" icon={ShieldCheck} label="Verification" />
+
+          <div className="nav-section-label">Assets</div>
+          <SidebarItem to="/assets" icon={Package} label="Assets" />
+
+          <div className="nav-section-label">Access</div>
+          <SidebarItem to="/roles" icon={Key} label="Roles & Permissions" />
+
+          <div className="nav-section-label">Compliance</div>
+          <SidebarItem to="/audit" icon={Activity} label="Audit Trail" />
+          <SidebarItem to="/transactions" icon={ArrowLeftRight} label="Transactions" />
 
           <div className="nav-section-label">System</div>
+          <SidebarItem to="/notifications" icon={Bell} label="Notifications" />
+          {isAdmin && <SidebarItem to="/administration" icon={Building2} label="Administration" />}
           <SidebarItem to="/settings" icon={Settings} label="Settings" />
         </nav>
 
+        {/* User Footer */}
         <div className="sidebar-footer">
           <div className="sidebar-user">
             <div className="sidebar-avatar">
@@ -156,24 +184,33 @@ export const DashboardLayout = () => {
             <div className="sidebar-user-info">
               <div className="sidebar-user-name">{user?.name || 'User'}</div>
               <div className="sidebar-user-email">{user?.email}</div>
+              <div className="sidebar-user-role">
+                {user?.roles?.map(r => (
+                  <span key={r} className={`role-chip-${r}`}>{r}</span>
+                ))}
+              </div>
             </div>
           </div>
           <button className="sidebar-logout" onClick={handleLogout}>
-            <LogOut size={14} />
+            <LogOut size={13} />
             Sign out
           </button>
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* ── Main Content ──────────────────────────────────────────────────────── */}
       <main className="main-content">
+        {/* Header */}
         <header className="main-header">
-          <div className="main-header-spacer" />
+          <div className="main-header-breadcrumb">
+            <strong>{pageTitle}</strong>
+          </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div className="header-badge">
-              <div className="header-badge-dot" />
-              Offline Mode
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+            {/* Network badge */}
+            <div className="header-badge" style={{ backgroundColor: 'rgba(22, 163, 74, 0.1)', color: '#16a34a', borderColor: 'rgba(22, 163, 74, 0.2)' }}>
+              <div className="header-badge-dot" style={{ backgroundColor: '#16a34a' }} />
+              Sepolia Live
             </div>
 
             {/* Notification Bell */}
@@ -183,7 +220,7 @@ export const DashboardLayout = () => {
                 onClick={() => setShowNotifs(v => !v)}
                 aria-label="Notifications"
               >
-                <Bell size={16} />
+                <Bell size={15} />
                 {unreadCount > 0 && (
                   <span className="notif-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
                 )}
@@ -195,6 +232,7 @@ export const DashboardLayout = () => {
           </div>
         </header>
 
+        {/* Page Content */}
         <div className="main-scroll">
           <div className="page-content animate-in">
             <Outlet />

@@ -1,4 +1,3 @@
-const express = require('express');
 const crypto = require('crypto');
 const prisma = require('../utils/prisma');
 const { success, error } = require('../utils/response');
@@ -18,7 +17,10 @@ router.get('/asset/:assetCode', async (req, res, next) => {
       include: {
         ownershipRecords: {
           where: { isCurrent: true },
-          include: { ownerDid: { select: { did: true, user: { select: { name: true, organization: true } } } } }
+          include: {
+            didRecord: { select: { did: true, user: { select: { name: true, organization: true } } } },
+            owner: { select: { name: true, organization: true } }
+          }
         }
       }
     });
@@ -28,26 +30,67 @@ router.get('/asset/:assetCode', async (req, res, next) => {
     }
 
     const currentOwnerRec = asset.ownershipRecords[0];
-    const ownerDid = currentOwnerRec ? currentOwnerRec.ownerDid.did : "PLATFORM";
-    const ownerName = currentOwnerRec && currentOwnerRec.ownerDid.user ? currentOwnerRec.ownerDid.user.name : "DecentraVault Platform";
+    const ownerDid = currentOwnerRec ? currentOwnerRec.ownerDid : "PLATFORM";
+    const ownerName = currentOwnerRec
+      ? (currentOwnerRec.owner?.name || currentOwnerRec.didRecord?.user?.name || "DecentraVault Platform")
+      : "DecentraVault Platform";
     
     // In a real scenario, this endpoint would verify the signature of the asset data,
     // or call the blockchain to ensure the token hasn't been tampered with.
     // For now, we simulate this verification check.
     
-    // Validate Hash
-    const offchainData = { 
-      assetCode: asset.assetCode, 
-      name: asset.name, 
-      category: asset.category, 
-      description: asset.description, 
-      location: asset.location, 
-      metadata: null // Simplified for example
+    // Fetch stored metadata to reconstruct the original hash input
+    const storedMetadata = await prisma.assetMetadata.findMany({
+      where: { assetId: asset.id }
+    });
+
+    // Rebuild the metadata object from stored key-value rows
+    let reconstructedMetadata = null;
+    if (storedMetadata.length > 0) {
+      reconstructedMetadata = {};
+      for (const m of storedMetadata) {
+        reconstructedMetadata[m.key] = m.value;
+      }
+    }
+
+    /**
+     * Hash robustness: JSON.stringify behaves differently based on the metadata value:
+     *   - undefined   → key is OMITTED from JSON string (most common for no-metadata mints)
+     *   - null        → key is present as "metadata":null
+     *   - {}          → key is present as "metadata":{}
+     *   - {k:v, ...}  → full object
+     *
+     * We try all plausible variants and accept any that matches the stored hash.
+     */
+    const baseFields = {
+      assetCode: asset.assetCode,
+      name: asset.name,
+      category: asset.category,
+      description: asset.description,
+      location: asset.location,
     };
-    const metadataString = JSON.stringify(offchainData);
-    const recomputedHash = '0x' + crypto.createHash('sha256').update(metadataString).digest('hex');
-    
-    const hashMatch = recomputedHash === asset.metadataHash;
+
+    const computeHash = (data) =>
+      '0x' + crypto.createHash('sha256').update(JSON.stringify(data)).digest('hex');
+
+    const candidateHashes = [
+      // Variant 1: no metadata key at all (metadata was undefined at mint time — most common)
+      computeHash(baseFields),
+      // Variant 2: metadata: null explicitly
+      computeHash({ ...baseFields, metadata: null }),
+      // Variant 3: metadata: {} (empty object)
+      computeHash({ ...baseFields, metadata: {} }),
+    ];
+
+    // Variant 4: reconstructed metadata from DB rows (if any)
+    if (reconstructedMetadata !== null) {
+      candidateHashes.push(computeHash({ ...baseFields, metadata: reconstructedMetadata }));
+    }
+
+    const storedHash = asset.metadataHash;
+    const hashMatch = storedHash != null && candidateHashes.includes(storedHash);
+
+
 
     const verificationResult = {
       assetCode: asset.assetCode,

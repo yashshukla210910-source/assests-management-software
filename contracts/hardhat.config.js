@@ -20,6 +20,13 @@ export default {
       url: "http://127.0.0.1:8545",
       chainId: 31337,
     },
+    sepolia: {
+      url: process.env.RPC_URL || "https://rpc.sepolia.org",
+      chainId: 11155111,
+      accounts: process.env.BACKEND_WALLET_PRIVATE_KEY
+        ? [process.env.BACKEND_WALLET_PRIVATE_KEY]
+        : [],
+    },
     amoy: {
       url: process.env.AMOY_RPC_URL || "https://rpc-amoy.polygon.technology",
       chainId: 80002,

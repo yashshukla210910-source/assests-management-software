@@ -96,4 +96,79 @@ router.get('/dashboard', requireAuth, async (req, res, next) => {
   }
 });
 
+/**
+ * @route GET /api/v1/admin/dashboard-charts
+ * @desc Get chart data for dashboard (categories, roles, status breakdown)
+ */
+router.get('/dashboard-charts', requireAuth, async (req, res, next) => {
+  try {
+    // Assets by category
+    const assetsByCategoryRaw = await prisma.asset.groupBy({
+      by: ['category'],
+      _count: { id: true }
+    });
+    const assetsByCategory = assetsByCategoryRaw.map(r => ({
+      category: r.category || 'uncategorized',
+      count: r._count.id
+    }));
+
+    // Identities by status
+    const identitiesByStatusRaw = await prisma.did.groupBy({
+      by: ['status'],
+      _count: { id: true }
+    });
+    const identitiesByStatus = identitiesByStatusRaw.map(r => ({
+      status: r.status,
+      count: r._count.id
+    }));
+
+    // Users by role
+    const usersByRoleRaw = await prisma.userRole.groupBy({
+      by: ['roleId'],
+      _count: { userId: true },
+      where: { revokedAt: null }
+    });
+    const roles = await prisma.role.findMany({ select: { id: true, name: true, displayName: true } });
+    const roleMap = Object.fromEntries(roles.map(r => [r.id, r.displayName || r.name]));
+    const usersByRole = usersByRoleRaw.map(r => ({
+      role: roleMap[r.roleId] || 'Unknown',
+      count: r._count.userId
+    }));
+
+    // Asset activity last 7 days (audit events grouped by day)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const recentEvents = await prisma.auditEvent.findMany({
+      where: { createdAt: { gte: sevenDaysAgo } },
+      select: { eventType: true, createdAt: true }
+    });
+
+    // Build day-by-day buckets
+    const dayBuckets = {};
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+      const key = d.toISOString().slice(0, 10);
+      dayBuckets[key] = { date: key, minted: 0, transferred: 0, created: 0, other: 0 };
+    }
+    for (const ev of recentEvents) {
+      const key = new Date(ev.createdAt).toISOString().slice(0, 10);
+      if (!dayBuckets[key]) continue;
+      if (ev.eventType?.includes('MINTED')) dayBuckets[key].minted++;
+      else if (ev.eventType?.includes('TRANSFERRED')) dayBuckets[key].transferred++;
+      else if (ev.eventType?.includes('CREATED')) dayBuckets[key].created++;
+      else dayBuckets[key].other++;
+    }
+    const assetActivity = Object.values(dayBuckets);
+
+    return success(res, {
+      assetsByCategory,
+      identitiesByStatus,
+      usersByRole,
+      assetActivity
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
+

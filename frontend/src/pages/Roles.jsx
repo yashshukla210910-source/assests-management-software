@@ -4,19 +4,19 @@ import api from '../utils/api';
 import { useAuthStore } from '../store/useAuthStore';
 
 const roleColors = {
-  admin: { bg: 'rgba(239,68,68,0.1)', color: '#f87171', border: 'rgba(239,68,68,0.25)' },
-  manager: { bg: 'rgba(99,102,241,0.1)', color: '#a5b4fc', border: 'rgba(99,102,241,0.25)' },
-  auditor: { bg: 'rgba(245,158,11,0.1)', color: '#fcd34d', border: 'rgba(245,158,11,0.25)' },
-  user: { bg: 'rgba(100,116,139,0.1)', color: '#94a3b8', border: 'rgba(100,116,139,0.25)' },
+  admin: { bg: 'rgba(37,99,235,0.08)', color: '#1d4ed8', border: 'rgba(37,99,235,0.2)' },
+  manager: { bg: 'rgba(22,163,74,0.08)', color: '#15803d', border: 'rgba(22,163,74,0.2)' },
+  auditor: { bg: 'rgba(217,119,6,0.08)', color: '#b45309', border: 'rgba(217,119,6,0.2)' },
+  user: { bg: 'rgba(100,116,139,0.08)', color: '#475569', border: 'rgba(100,116,139,0.2)' },
 };
 
 const domainColors = {
-  identity: '#3b82f6',
-  asset: '#22c55e',
-  role: '#8b5cf6',
-  audit: '#f59e0b',
-  notification: '#06b6d4',
-  admin: '#ef4444',
+  identity: '#2563eb',
+  asset: '#16a34a',
+  role: '#7c3aed',
+  audit: '#d97706',
+  notification: '#0891b2',
+  admin: '#dc2626',
 };
 
 const RoleCard = ({ role, isAdmin, onUpdate }) => {
