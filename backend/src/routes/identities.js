@@ -81,7 +81,7 @@ router.post('/', requireAuth, requirePermission('identity.create'), validate([
   body('role').notEmpty().withMessage('Role required')
 ]), async (req, res, next) => {
   try {
-    const { email, name, organization, role, password } = req.body;
+    const { email, name, organization, role, password, walletAddress } = req.body;
 
     // 1. Check if user exists
     let user = await prisma.user.findUnique({ where: { email } });
@@ -93,10 +93,29 @@ router.post('/', requireAuth, requirePermission('identity.create'), validate([
     const dbRole = await prisma.role.findUnique({ where: { name: role } });
     if (!dbRole) return error(res, 'Invalid role specified', 400);
 
-    // 3. Generate Crypto Identity
-    const { privateKey, publicKey, address, did, chainId } = generateDidCredentials();
-    const { encryptedKey } = encryptPrivateKey(privateKey);
-    const didDoc = generateDidDocument(did, publicKey);
+    // 3. Generate Crypto Identity or use provided Wallet Address
+    let privateKey, publicKey, address, did, chainId, encryptedKey, didDoc;
+
+    if (walletAddress && walletAddress.startsWith('0x')) {
+      // User provided an external MetaMask wallet
+      address = walletAddress;
+      chainId = process.env.CHAIN_ID || 11155111;
+      did = `did:ethr:${chainId}:${address}`;
+      publicKey = '0x'; // Public key is not strictly needed for external wallets, signature recovery will be used
+      encryptedKey = 'EXTERNAL_WALLET';
+      didDoc = JSON.stringify({ "@context": "https://w3id.org/did/v1", "id": did });
+    } else {
+      // Generate random custodial wallet
+      const credentials = generateDidCredentials();
+      privateKey = credentials.privateKey;
+      publicKey = credentials.publicKey;
+      address = credentials.address;
+      did = credentials.did;
+      chainId = credentials.chainId;
+      const encryptionResult = encryptPrivateKey(privateKey);
+      encryptedKey = encryptionResult.encryptedKey;
+      didDoc = generateDidDocument(did, publicKey);
+    }
 
     // Metadata hash for blockchain
     const metadataString = JSON.stringify({ name, email, organization, did });

@@ -138,6 +138,11 @@ const CreateIdentityModal = ({ onClose, onSuccess }) => {
                 <label className="form-label">Organization</label>
                 <input className="form-input" value={form.organization} onChange={e => setForm(f => ({ ...f, organization: e.target.value }))} placeholder="Department / Company" />
               </div>
+              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <label className="form-label">MetaMask Wallet Address (Optional)</label>
+                <input className="form-input" value={form.walletAddress || ''} onChange={e => setForm(f => ({ ...f, walletAddress: e.target.value }))} placeholder="0x..." />
+                <span className="form-error" style={{ color: 'var(--text-muted)' }}>Paste a user's MetaMask address to link it. If left blank, a random wallet will be generated.</span>
+              </div>
               <div className="form-group">
                 <label className="form-label">Role *</label>
                 <select className="form-select" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
@@ -153,7 +158,7 @@ const CreateIdentityModal = ({ onClose, onSuccess }) => {
               </div>
             </div>
             <div style={{ background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)', padding: '0.75rem', fontSize: '0.8rem', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
-              A DID (Decentralized Identifier) will be generated and registered on the configured blockchain network.
+              If a Wallet Address is provided, the user can log in with MetaMask. Otherwise, a random DID will be generated.
             </div>
           </div>
           <div className="modal-footer">

@@ -200,9 +200,9 @@ router.post('/did-verify', async (req, res, next) => {
       return error(res, 'Invalid or expired challenge', 401, 'INVALID_CHALLENGE');
     }
 
-    // Retrieve DID Document to get public key
-    const didEntity = await prisma.did.findUnique({
-      where: { did },
+    // Retrieve DID Document to get public key (case-insensitive for MetaMask checksums)
+    const didEntity = await prisma.did.findFirst({
+      where: { did: { equals: did, mode: 'insensitive' } },
       include: {
         user: {
           include: {
