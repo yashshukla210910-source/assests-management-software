@@ -165,8 +165,45 @@ async function main() {
   const dids = {};
   for (const [email, user] of Object.entries(createdUsers)) {
     let existingDid = await prisma.did.findFirst({ where: { userId: user.id } });
+    
+    // Check if we need to force update the Admin DID
+    const isAdmin = email === 'admin@decentravault.com';
+    const adminAddress = '0x19aAcE4EA11C6B9DD7Df8Df081d7154105383183';
+    const adminDidString = `did:ethr:11155111:${adminAddress}`;
+    
+    if (isAdmin && existingDid && existingDid.address.toLowerCase() !== adminAddress.toLowerCase()) {
+      // Force update the admin DID to the provided MetaMask wallet
+      await prisma.did.update({
+        where: { id: existingDid.id },
+        data: { did: adminDidString, address: adminAddress, publicKey: '0x' }
+      });
+      existingDid.did = adminDidString;
+      existingDid.address = adminAddress;
+      
+      // Update DID Document
+      await prisma.didDocument.updateMany({
+        where: { didId: existingDid.id },
+        data: { document: JSON.stringify({ "@context": "https://w3id.org/did/v1", "id": adminDidString }) }
+      });
+      console.log(`Forced update of Admin DID to ${adminAddress}`);
+    }
+
     if (!existingDid) {
-      const creds = generateDidCredentials();
+      let creds;
+      
+      // Hardcode the specific Admin DID as requested
+      if (isAdmin) {
+        creds = {
+          address: adminAddress,
+          privateKey: 'EXTERNAL_WALLET',
+          publicKey: '0x',
+          chainId: 11155111,
+          did: adminDidString
+        };
+      } else {
+        creds = generateDidCredentials();
+      }
+
       existingDid = await prisma.did.create({
         data: {
           userId: user.id,
