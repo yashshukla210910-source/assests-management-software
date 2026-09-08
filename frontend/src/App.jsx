@@ -26,36 +26,27 @@ const Login = () => {
   const [submitting, setSubmitting] = React.useState(false);
 
   const handleDidLogin = async (e) => {
-    if (e) e.preventDefault();
+    e.preventDefault();
+    if (!did || !privateKey) {
+      setError('Please enter your DID and Private Key.');
+      return;
+    }
     setError('');
     setSubmitting(true);
-    
     try {
-      if (!window.ethereum) {
-        throw new Error('MetaMask is not installed. Please install it to continue.');
-      }
-
-      const { ethers } = await import('ethers');
-      // Request account access
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const accounts = await provider.send("eth_requestAccounts", []);
-      const address = accounts[0];
-      
-      const chainId = import.meta.env.VITE_CHAIN_ID || 11155111;
-      const did = `did:ethr:${chainId}:${address}`;
-      
       const api = (await import('./utils/api')).default;
       const challengeRes = await api.post('/auth/did-challenge', { did });
       const nonce = challengeRes.data.data.nonce;
 
-      const signer = await provider.getSigner();
+      const { ethers } = await import('ethers');
+      const wallet = new ethers.Wallet(privateKey);
       const message = `Sign this message to authenticate with ${APP_CONFIG.BRAND_NAME}. Nonce: ${nonce}`;
-      const signature = await signer.signMessage(message);
+      const signature = await wallet.signMessage(message);
 
       const result = await loginWithDid(did, signature, nonce);
       if (!result.success) throw new Error(result.error);
     } catch (err) {
-      const message = err.response?.data?.error?.message || err.message || 'MetaMask Authentication failed.';
+      const message = err.response?.data?.error?.message || err.message || 'DID Authentication failed.';
       setError(message);
     } finally {
       setSubmitting(false);
@@ -126,26 +117,46 @@ const Login = () => {
           )}
 
           <form onSubmit={handleDidLogin} className="login-form" noValidate>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center', marginTop: '2rem' }}>
-              <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                Connect your MetaMask wallet to authenticate securely without passwords.
-              </p>
-              
-              <button 
-                type="button" 
-                onClick={handleDidLogin} 
-                className="login-btn" 
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', padding: '1rem' }}
-                disabled={submitting || isLoading}
-              >
-                {submitting ? <span className="spinner-sm" /> : (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M21.2 5.9L12.3 0.6C12.1 0.5 11.9 0.5 11.7 0.6L2.8 5.9C2.5 6.1 2.3 6.4 2.3 6.8V17.2C2.3 17.6 2.5 17.9 2.8 18.1L11.7 23.4C11.9 23.5 12.1 23.5 12.3 23.4L21.2 18.1C21.5 17.9 21.7 17.6 21.7 17.2V6.8C21.7 6.4 21.5 6.1 21.2 5.9ZM12 21.8L4.3 17.2V8.1L11.2 12.3C11.4 12.4 11.7 12.5 12 12.5C12.3 12.5 12.6 12.4 12.8 12.3L19.7 8.1V17.2L12 21.8ZM19.7 6.4L12 11L4.3 6.4L12 1.8L19.7 6.4Z" fill="currentColor"/>
-                  </svg>
-                )}
-                {submitting ? 'Connecting to MetaMask…' : 'Sign in with MetaMask'}
-              </button>
+            <div className="login-field">
+              <label htmlFor="did" className="login-label">Decentralized Identifier (DID)</label>
+              <input
+                id="did" type="text" className="login-input"
+                value={did} onChange={e => setDid(e.target.value)}
+                placeholder="did:ethr:11155111:0x..."
+                required disabled={submitting}
+                autoComplete="username"
+              />
             </div>
+
+            <div className="login-field">
+              <label htmlFor="privateKey" className="login-label">Private Key</label>
+              <div className="login-input-group">
+                <input
+                  id="privateKey"
+                  type={showPassword ? 'text' : 'password'}
+                  className="login-input"
+                  value={privateKey} onChange={e => setPrivateKey(e.target.value)}
+                  placeholder="0x..."
+                  required disabled={submitting}
+                  autoComplete="current-password"
+                />
+                <button type="button" className="login-eye-btn" onClick={() => setShowPassword(v => !v)} tabIndex={-1}>
+                  {showPassword ? (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  ) : (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  )}
+                </button>
+              </div>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                Your key is used locally to sign the authentication challenge and is never transmitted.
+              </p>
+            </div>
+
+            <button type="submit" className="login-btn" disabled={submitting || isLoading}>
+              {submitting && <span className="spinner-sm" />}
+              {submitting ? 'Verifying signature…' : 'Sign in with DID'}
+            </button>
           </form>
         </div>
       </div>
