@@ -58,6 +58,14 @@ const CreateIdentityModal = ({ onClose, onSuccess }) => {
                   <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>DID</div>
                   <div className="mono" style={{ wordBreak: 'break-all', display: 'block', marginTop: 4 }}>{result.did}</div>
                 </div>
+                {result.privateKey && result.privateKey !== 'EXTERNAL_WALLET' && (
+                  <div>
+                    <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Private Key</div>
+                    <div className="mono" style={{ wordBreak: 'break-all', display: 'block', marginTop: 4, background: '#fee2e2', color: '#b91c1c', padding: '0.5rem', borderRadius: '4px' }}>
+                      {result.privateKey}
+                    </div>
+                  </div>
+                )}
                 <div>
                   <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Ethereum Address</div>
                   <div className="mono" style={{ display: 'block', marginTop: 4 }}>{result.address}</div>
@@ -82,6 +90,16 @@ const CreateIdentityModal = ({ onClose, onSuccess }) => {
                 <a href={getExplorerUrl(result.txHash)} target="_blank" rel="noreferrer" className="btn btn-ghost" style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
                   View on Polygon Explorer <ExternalLink size={16} />
                 </a>
+              </div>
+            )}
+
+            {result.privateKey && result.privateKey !== 'EXTERNAL_WALLET' && (
+              <div className="alert alert-error" style={{ marginTop: '1.5rem' }}>
+                <AlertTriangle size={16} />
+                <div>
+                  <strong>CRITICAL: Private Key Generated</strong>
+                  <br /><span style={{ fontSize: '0.75rem' }}>You MUST copy the Private Key and DID shown above and send them securely to the user. They will need both to log in, and the Private Key will NEVER be shown again!</span>
+                </div>
               </div>
             )}
 

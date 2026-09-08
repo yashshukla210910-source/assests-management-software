@@ -192,6 +192,7 @@ router.post('/', requireAuth, requirePermission('identity.create'), validate([
       address,
       txHash,
       userId: result.user.id,
+      privateKey: privateKey || 'EXTERNAL_WALLET',
       temporaryPassword: password ? undefined : actualPassword
     }, 201);
   } catch (err) {
