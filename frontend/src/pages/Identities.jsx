@@ -1,7 +1,8 @@
 import React from 'react';
-import { Search, UserPlus, MoreVertical, Filter, RefreshCw, X, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Search, UserPlus, MoreVertical, Filter, RefreshCw, X, CheckCircle, AlertTriangle, ShieldCheck, ExternalLink } from 'lucide-react';
 import api from '../utils/api';
 import { useAuthStore } from '../store/useAuthStore';
+import { getExplorerUrl, getExplorerNetworkName } from '../utils/explorer';
 
 const statusBadge = (status) => {
   const map = { active: 'badge-success', suspended: 'badge-warning', revoked: 'badge-danger' };
@@ -42,32 +43,60 @@ const CreateIdentityModal = ({ onClose, onSuccess }) => {
               <CheckCircle size={16} />
               Identity registered successfully on blockchain!
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div>
-                <div className="form-label">DID</div>
-                <div className="mono" style={{ wordBreak: 'break-all', display: 'block', marginTop: 4 }}>{result.did}</div>
+            
+            <div className="panel" style={{ padding: '1rem', marginTop: '1rem', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: '#0f172a', fontWeight: 600 }}>
+                <ShieldCheck size={18} style={{ color: '#10b981' }} />
+                Blockchain Proof
               </div>
-              <div>
-                <div className="form-label">Ethereum Address</div>
-                <div className="mono" style={{ display: 'block', marginTop: 4 }}>{result.address}</div>
-              </div>
-              <div>
-                <div className="form-label">Transaction Hash</div>
-                <div className="mono" style={{ display: 'block', marginTop: 4 }}>{result.txHash}</div>
-              </div>
-              {result.temporaryPassword && (
-                <div className="alert alert-warning">
-                  <AlertTriangle size={16} />
-                  <div>
-                    <strong>Temporary Password:</strong> {result.temporaryPassword}
-                    <br /><span style={{ fontSize: '0.75rem' }}>Share this securely with the user.</span>
+              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                <div>
+                  <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Network</div>
+                  <div style={{ fontWeight: 500 }}>{getExplorerNetworkName()}</div>
+                </div>
+                <div>
+                  <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>DID</div>
+                  <div className="mono" style={{ wordBreak: 'break-all', display: 'block', marginTop: 4 }}>{result.did}</div>
+                </div>
+                <div>
+                  <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Ethereum Address</div>
+                  <div className="mono" style={{ display: 'block', marginTop: 4 }}>{result.address}</div>
+                </div>
+                <div>
+                  <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Transaction Hash</div>
+                  <div className="mono" style={{ display: 'block', marginTop: 4, wordBreak: 'break-all', color: '#3b82f6' }}>
+                    {result.txHash?.startsWith('0x') ? (
+                      <a href={getExplorerUrl(result.txHash)} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
+                        {result.txHash}
+                      </a>
+                    ) : (
+                      result.txHash
+                    )}
                   </div>
                 </div>
-              )}
+              </div>
             </div>
+
+            {result.txHash?.startsWith('0x') && (
+              <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+                <a href={getExplorerUrl(result.txHash)} target="_blank" rel="noreferrer" className="btn btn-ghost" style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+                  View on Polygon Explorer <ExternalLink size={16} />
+                </a>
+              </div>
+            )}
+
+            {result.temporaryPassword && (
+              <div className="alert alert-warning" style={{ marginTop: '1.5rem' }}>
+                <AlertTriangle size={16} />
+                <div>
+                  <strong>Temporary Password:</strong> {result.temporaryPassword}
+                  <br /><span style={{ fontSize: '0.75rem' }}>Share this securely with the user.</span>
+                </div>
+              </div>
+            )}
           </div>
           <div className="modal-footer">
-            <button className="btn btn-primary" onClick={onClose}>Done</button>
+            <button className="btn btn-primary" onClick={onClose} style={{ width: '100%' }}>Done</button>
           </div>
         </div>
       </div>
@@ -75,13 +104,20 @@ const CreateIdentityModal = ({ onClose, onSuccess }) => {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal" onMouseDown={e => e.stopPropagation()}>
         <div className="modal-header">
           <span className="modal-title">Register New Identity</span>
-          <button className="modal-close" onClick={onClose}><X size={18} /></button>
+          <button type="button" className="modal-close" onClick={onClose}><X size={18} /></button>
         </div>
-        <form onSubmit={handleSubmit}>
+        <form 
+          onSubmit={handleSubmit}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') {
+              e.preventDefault();
+            }
+          }}
+        >
           <div className="modal-body">
             {error && (
               <div className="alert alert-error">
@@ -136,11 +172,11 @@ const CreateIdentityModal = ({ onClose, onSuccess }) => {
 const IdentityDetailsModal = ({ identity, onClose }) => {
   if (!identity) return null;
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal" onMouseDown={e => e.stopPropagation()}>
         <div className="modal-header">
           <span className="modal-title">Identity Details</span>
-          <button className="modal-close" onClick={onClose}><X size={18} /></button>
+          <button type="button" className="modal-close" onClick={onClose}><X size={18} /></button>
         </div>
         <div className="modal-body">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -183,6 +219,38 @@ const IdentityDetailsModal = ({ identity, onClose }) => {
             <div>
               <div className="form-label">Created At</div>
               <div>{new Date(identity.createdAt).toLocaleString()}</div>
+            </div>
+            
+            <div className="panel" style={{ padding: '1.25rem', marginTop: '0.5rem', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: '#0f172a', fontWeight: 600, fontSize: '1rem' }}>
+                <ShieldCheck size={20} style={{ color: '#10b981' }} />
+                Blockchain Proof
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
+                <div>
+                  <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Network</div>
+                  <div style={{ fontWeight: 500, marginTop: 4 }}>{getExplorerNetworkName()}</div>
+                </div>
+                <div>
+                  <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Registration Transaction</div>
+                  <div className="mono" style={{ marginTop: 4, wordBreak: 'break-all' }}>
+                    {identity.onChainTx && identity.onChainTx.startsWith('0x') ? (
+                      <a href={getExplorerUrl(identity.onChainTx)} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: '#3b82f6' }}>
+                        {identity.onChainTx}
+                      </a>
+                    ) : (
+                      identity.onChainTx || '—'
+                    )}
+                  </div>
+                </div>
+                {identity.onChainTx && identity.onChainTx.startsWith('0x') && (
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <a href={getExplorerUrl(identity.onChainTx)} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm" style={{ padding: '0.5rem 1rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'white', border: '1px solid #cbd5e1' }}>
+                      View on Polygon Explorer <ExternalLink size={14} />
+                    </a>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

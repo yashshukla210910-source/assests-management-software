@@ -55,6 +55,16 @@ router.get('/dashboard', requireAuth, async (req, res, next) => {
   try {
     const isAdmin = req.user.roles.includes('admin');
     const isManager = req.user.roles.includes('manager') || req.user.roles.includes('auditor');
+    const isGlobal = isAdmin || isManager;
+
+    const didWhere = isGlobal ? {} : { userId: req.user.id };
+    const assetWhere = isGlobal ? {} : { 
+      OR: [
+        { createdBy: req.user.id },
+        { ownershipRecords: { some: { ownerUserId: req.user.id, isCurrent: true } } }
+      ]
+    };
+    const auditWhere = isGlobal ? {} : { actorUserId: req.user.id };
 
     const [
       totalIdentities, activeIdentities,
@@ -62,12 +72,13 @@ router.get('/dashboard', requireAuth, async (req, res, next) => {
       totalAuditEvents, recentAuditEvents,
       unreadNotifications
     ] = await Promise.all([
-      prisma.did.count(),
-      prisma.did.count({ where: { status: 'active' } }),
-      prisma.asset.count(),
-      prisma.asset.count({ where: { status: { not: 'revoked' } } }),
-      prisma.auditEvent.count(),
+      prisma.did.count({ where: didWhere }),
+      prisma.did.count({ where: { ...didWhere, status: 'active' } }),
+      prisma.asset.count({ where: assetWhere }),
+      prisma.asset.count({ where: { ...assetWhere, status: { not: 'revoked' } } }),
+      prisma.auditEvent.count({ where: auditWhere }),
       prisma.auditEvent.findMany({
+        where: auditWhere,
         take: 10,
         orderBy: { createdAt: 'desc' },
         include: { actor: { select: { name: true, email: true } } }
@@ -102,9 +113,23 @@ router.get('/dashboard', requireAuth, async (req, res, next) => {
  */
 router.get('/dashboard-charts', requireAuth, async (req, res, next) => {
   try {
+    const isAdmin = req.user.roles.includes('admin');
+    const isManager = req.user.roles.includes('manager') || req.user.roles.includes('auditor');
+    const isGlobal = isAdmin || isManager;
+
+    const didWhere = isGlobal ? {} : { userId: req.user.id };
+    const assetWhere = isGlobal ? {} : { 
+      OR: [
+        { createdBy: req.user.id },
+        { ownershipRecords: { some: { ownerUserId: req.user.id, isCurrent: true } } }
+      ]
+    };
+    const auditWhere = isGlobal ? {} : { actorUserId: req.user.id };
+
     // Assets by category
     const assetsByCategoryRaw = await prisma.asset.groupBy({
       by: ['category'],
+      where: assetWhere,
       _count: { id: true }
     });
     const assetsByCategory = assetsByCategoryRaw.map(r => ({
@@ -115,6 +140,7 @@ router.get('/dashboard-charts', requireAuth, async (req, res, next) => {
     // Identities by status
     const identitiesByStatusRaw = await prisma.did.groupBy({
       by: ['status'],
+      where: didWhere,
       _count: { id: true }
     });
     const identitiesByStatus = identitiesByStatusRaw.map(r => ({
@@ -122,23 +148,26 @@ router.get('/dashboard-charts', requireAuth, async (req, res, next) => {
       count: r._count.id
     }));
 
-    // Users by role
-    const usersByRoleRaw = await prisma.userRole.groupBy({
-      by: ['roleId'],
-      _count: { userId: true },
-      where: { revokedAt: null }
-    });
-    const roles = await prisma.role.findMany({ select: { id: true, name: true, displayName: true } });
-    const roleMap = Object.fromEntries(roles.map(r => [r.id, r.displayName || r.name]));
-    const usersByRole = usersByRoleRaw.map(r => ({
-      role: roleMap[r.roleId] || 'Unknown',
-      count: r._count.userId
-    }));
+    // Users by role (Only show if global)
+    let usersByRole = [];
+    if (isGlobal) {
+      const usersByRoleRaw = await prisma.userRole.groupBy({
+        by: ['roleId'],
+        _count: { userId: true },
+        where: { revokedAt: null }
+      });
+      const roles = await prisma.role.findMany({ select: { id: true, name: true, displayName: true } });
+      const roleMap = Object.fromEntries(roles.map(r => [r.id, r.displayName || r.name]));
+      usersByRole = usersByRoleRaw.map(r => ({
+        role: roleMap[r.roleId] || 'Unknown',
+        count: r._count.userId
+      }));
+    }
 
     // Asset activity last 7 days (audit events grouped by day)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const recentEvents = await prisma.auditEvent.findMany({
-      where: { createdAt: { gte: sevenDaysAgo } },
+      where: { ...auditWhere, createdAt: { gte: sevenDaysAgo } },
       select: { eventType: true, createdAt: true }
     });
 

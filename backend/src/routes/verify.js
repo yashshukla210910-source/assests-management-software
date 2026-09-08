@@ -1,6 +1,9 @@
+const express = require('express');
 const crypto = require('crypto');
 const prisma = require('../utils/prisma');
 const { success, error } = require('../utils/response');
+const { APP_CONFIG } = require('../config/constants');
+const { ethers } = require('ethers');
 
 const router = express.Router();
 
@@ -32,8 +35,8 @@ router.get('/asset/:assetCode', async (req, res, next) => {
     const currentOwnerRec = asset.ownershipRecords[0];
     const ownerDid = currentOwnerRec ? currentOwnerRec.ownerDid : "PLATFORM";
     const ownerName = currentOwnerRec
-      ? (currentOwnerRec.owner?.name || currentOwnerRec.didRecord?.user?.name || "DecentraVault Platform")
-      : "DecentraVault Platform";
+      ? (currentOwnerRec.owner?.name || currentOwnerRec.didRecord?.user?.name || `${APP_CONFIG.BRAND_NAME} Platform`)
+      : `${APP_CONFIG.BRAND_NAME} Platform`;
     
     // In a real scenario, this endpoint would verify the signature of the asset data,
     // or call the blockchain to ensure the token hasn't been tampered with.
@@ -46,10 +49,21 @@ router.get('/asset/:assetCode', async (req, res, next) => {
 
     // Rebuild the metadata object from stored key-value rows
     let reconstructedMetadata = null;
+    let documentHash = null;
+    let documentUrl = null;
     if (storedMetadata.length > 0) {
       reconstructedMetadata = {};
       for (const m of storedMetadata) {
-        reconstructedMetadata[m.key] = m.value;
+        if (m.key === '_documentHash') {
+          documentHash = m.value;
+        } else if (m.key === '_documentUrl') {
+          documentUrl = m.value;
+        } else {
+          reconstructedMetadata[m.key] = m.value;
+        }
+      }
+      if (Object.keys(reconstructedMetadata).length === 0) {
+        reconstructedMetadata = null;
       }
     }
 
@@ -68,6 +82,7 @@ router.get('/asset/:assetCode', async (req, res, next) => {
       category: asset.category,
       description: asset.description,
       location: asset.location,
+      ...(documentHash && { documentHash, documentUrl })
     };
 
     const computeHash = (data) =>

@@ -11,6 +11,7 @@ import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
+import { getExplorerUrl } from '../utils/explorer';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const eventTypeLabel = (type) => {
@@ -103,6 +104,7 @@ export const Dashboard = () => {
   const user = useAuthStore(s => s.user);
   const [stats, setStats] = React.useState(null);
   const [activity, setActivity] = React.useState([]);
+  const [recentAssets, setRecentAssets] = React.useState([]);
   const [charts, setCharts] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -116,13 +118,15 @@ export const Dashboard = () => {
     else setLoading(true);
     setError(null);
     try {
-      const [dashRes, chartsRes] = await Promise.all([
+      const [dashRes, chartsRes, assetsRes] = await Promise.all([
         api.get('/admin/dashboard'),
-        api.get('/admin/dashboard-charts').catch(() => ({ data: { data: null } }))
+        api.get('/admin/dashboard-charts').catch(() => ({ data: { data: null } })),
+        api.get('/assets?limit=5').catch(() => ({ data: { data: [] } }))
       ]);
       setStats(dashRes.data.data.stats);
       setActivity(dashRes.data.data.recentActivity || []);
       setCharts(chartsRes.data.data);
+      setRecentAssets(assetsRes.data.data || []);
     } catch (err) {
       setError('Failed to load dashboard data.');
     } finally {
@@ -359,8 +363,11 @@ export const Dashboard = () => {
       {/* ── Bottom Row: Recent Activity + Quick Actions + System */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '1rem' }}>
 
-        {/* Recent Activity Table */}
-        <div className="panel">
+        {/* Left Column: Activity & Assets */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          
+          {/* Recent Activity Table */}
+          <div className="panel">
           <div className="panel-header">
             <div>
               <div className="panel-title">Recent Activity</div>
@@ -409,7 +416,7 @@ export const Dashboard = () => {
                       <td>
                         {event.txHash ? (
                           <a
-                            href={`https://sepolia.etherscan.io/tx/${event.txHash}`}
+                            href={getExplorerUrl(event.txHash)}
                             target="_blank" rel="noopener noreferrer"
                             className="mono"
                             style={{ fontSize: '0.7rem' }}
@@ -427,6 +434,58 @@ export const Dashboard = () => {
               </table>
             </div>
           )}
+        </div>
+
+        {/* Recent Assets Table */}
+        <div className="panel">
+          <div className="panel-header">
+            <div>
+              <div className="panel-title">Recent Assets</div>
+              <div className="panel-sub">Latest registered and assigned assets</div>
+            </div>
+            <button className="btn btn-ghost btn-sm" onClick={() => navigate('/assets')}>
+              View all <ArrowRight size={13} />
+            </button>
+          </div>
+
+          {recentAssets.length === 0 ? (
+            <div className="empty-state">
+              <Package size={28} className="empty-state-icon" />
+              <div className="empty-state-title">No assets found</div>
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Asset ID</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Owner</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentAssets.map(asset => {
+                    const owner = asset.ownershipRecords?.[0];
+                    const ownerName = owner ? (owner.owner?.name || owner.didRecord?.user?.name || 'Unknown') : '—';
+                    return (
+                      <tr key={asset.id} style={{ cursor: 'pointer' }} onClick={() => navigate('/assets')}>
+                        <td className="mono" style={{ fontSize: '0.8rem' }}>{asset.assetCode}</td>
+                        <td style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{asset.name}</td>
+                        <td style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{asset.category}</td>
+                        <td style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{ownerName}</td>
+                        <td>
+                          <span className={`badge badge-neutral`}>{asset.status}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
         </div>
 
         {/* Right column: Quick Actions + Role Distribution */}

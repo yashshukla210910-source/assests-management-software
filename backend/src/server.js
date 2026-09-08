@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
 const { connectDB } = require('./config/db');
+const { APP_CONFIG } = require('./config/constants');
 
 const authRoutes = require('./routes/auth');
 const identityRoutes = require('./routes/identities');
@@ -78,7 +79,7 @@ app.use(errorHandler);
 
 // Start server
 const server = app.listen(PORT, async () => {
-  console.log(`\n🚀 DecentraVault API running on port ${PORT}`);
+  console.log(`\n🚀 ${APP_CONFIG.BRAND_NAME} API running on port ${PORT}`);
   console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`   Database: ${process.env.DATABASE_URL ? 'configured' : 'NOT configured'}\n`);
 

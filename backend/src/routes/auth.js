@@ -223,10 +223,11 @@ router.post('/did-verify', async (req, res, next) => {
     // For this SIH demo, if the keys are custodial, the frontend might have passed a signature.
     // Let's perform a basic ECDSA/Ethereum signature verification here.
     const { ethers } = require('ethers');
+    const { APP_CONFIG } = require('../config/constants');
     let isValid = false;
     try {
       // The message that was signed
-      const message = `Sign this message to authenticate with DecentraVault. Nonce: ${nonce}`;
+      const message = `Sign this message to authenticate with ${APP_CONFIG.BRAND_NAME}. Nonce: ${nonce}`;
       const recoveredAddress = ethers.verifyMessage(message, signature);
       if (recoveredAddress.toLowerCase() === didEntity.address.toLowerCase()) {
         isValid = true;

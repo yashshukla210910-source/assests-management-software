@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
+import { APP_CONFIG } from '../config/constants';
 import api from '../utils/api';
 import {
   LayoutDashboard, Users, Package, ShieldCheck, Activity,
@@ -108,7 +109,7 @@ export const DashboardLayout = () => {
   const [showNotifs, setShowNotifs] = React.useState(false);
   const [unreadCount, setUnreadCount] = React.useState(0);
 
-  const pageTitle = PAGE_TITLES[location.pathname] || 'DecentraVault';
+  const pageTitle = PAGE_TITLES[location.pathname] || APP_CONFIG.BRAND_NAME;
   const isAdmin = user?.roles?.includes('admin');
 
   const handleLogout = async () => {
@@ -148,7 +149,7 @@ export const DashboardLayout = () => {
               <path d="M7 11V7a5 5 0 0110 0v4"/>
             </svg>
           </div>
-          <span className="sidebar-brand">DecentraVault</span>
+          <span className="sidebar-brand">{APP_CONFIG.BRAND_NAME}</span>
         </div>
 
         {/* Navigation */}

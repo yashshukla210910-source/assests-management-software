@@ -1,7 +1,8 @@
 import React from 'react';
-import { Search, Plus, ArrowRightLeft, RefreshCw, X, CheckCircle, AlertTriangle, Eye } from 'lucide-react';
+import { Search, Plus, ArrowRightLeft, RefreshCw, X, CheckCircle, AlertTriangle, Eye, ExternalLink, ShieldCheck } from 'lucide-react';
 import api from '../utils/api';
 import { useAuthStore } from '../store/useAuthStore';
+import { getExplorerUrl, getExplorerNetworkName, getAddressExplorerUrl } from '../utils/explorer';
 
 const statusBadge = (status) => {
   const map = { assigned: 'badge-blue', minted: 'badge-success', revoked: 'badge-danger', transferred: 'badge-info' };
@@ -17,6 +18,7 @@ const categoryLabel = (cat) => {
 
 const MintAssetModal = ({ onClose, onSuccess }) => {
   const [form, setForm] = React.useState({ assetCode: '', name: '', category: 'hardware', description: '', location: '', ownerDid: '' });
+  const [file, setFile] = React.useState(null);
   const [identities, setIdentities] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState('');
@@ -33,9 +35,19 @@ const MintAssetModal = ({ onClose, onSuccess }) => {
     setError('');
     setLoading(true);
     try {
-      const payload = { ...form };
-      if (!payload.ownerDid) delete payload.ownerDid;
-      const { data } = await api.post('/assets', payload);
+      const payload = new FormData();
+      Object.keys(form).forEach(key => {
+        if (form[key]) payload.append(key, form[key]);
+      });
+      if (file) {
+        payload.append('document', file);
+      }
+      
+      const { data } = await api.post('/assets', payload, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
       setResult(data.data);
       onSuccess();
     } catch (err) {
@@ -47,34 +59,55 @@ const MintAssetModal = ({ onClose, onSuccess }) => {
 
   if (result) {
     return (
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="modal" onClick={e => e.stopPropagation()}>
+      <div className="modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+        <div className="modal" onMouseDown={e => e.stopPropagation()}>
           <div className="modal-header">
             <span className="modal-title">Asset Minted</span>
-            <button className="modal-close" onClick={onClose}><X size={18} /></button>
+            <button type="button" className="modal-close" onClick={onClose}><X size={18} /></button>
           </div>
           <div className="modal-body">
             <div className="alert alert-success">
               <CheckCircle size={16} />
-              Asset minted successfully!
+              Asset minted successfully on blockchain!
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div>
-                <div className="form-label">Asset Code</div>
-                <div className="mono" style={{ display: 'block', marginTop: 4 }}>{result.asset?.assetCode}</div>
+            
+            <div className="panel" style={{ padding: '1rem', marginTop: '1rem', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: '#0f172a', fontWeight: 600 }}>
+                <ShieldCheck size={18} style={{ color: '#10b981' }} />
+                Blockchain Proof
               </div>
-              <div>
-                <div className="form-label">Token ID</div>
-                <div className="mono" style={{ display: 'block', marginTop: 4 }}>{result.asset?.tokenId}</div>
+              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                <div>
+                  <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Network</div>
+                  <div style={{ fontWeight: 500 }}>{getExplorerNetworkName()}</div>
+                </div>
+                <div>
+                  <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Asset Code</div>
+                  <div className="mono" style={{ display: 'block', marginTop: 4 }}>{result.asset?.assetCode}</div>
+                </div>
+                <div>
+                  <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Token ID</div>
+                  <div className="mono" style={{ display: 'block', marginTop: 4, fontWeight: 600 }}>{result.asset?.tokenId ? `#${result.asset.tokenId}` : 'Pending'}</div>
+                </div>
+                <div>
+                  <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Transaction Hash</div>
+                  <div className="mono" style={{ display: 'block', marginTop: 4, wordBreak: 'break-all', color: '#3b82f6' }}>
+                    <a href={getExplorerUrl(result.txHash)} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
+                      {result.txHash}
+                    </a>
+                  </div>
+                </div>
               </div>
-              <div>
-                <div className="form-label">Transaction Hash</div>
-                <div className="mono" style={{ display: 'block', marginTop: 4, wordBreak: 'break-all' }}>{result.txHash}</div>
-              </div>
+            </div>
+            
+            <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+              <a href={getExplorerUrl(result.txHash)} target="_blank" rel="noreferrer" className="btn btn-ghost" style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+                View on Polygon Explorer <ExternalLink size={16} />
+              </a>
             </div>
           </div>
           <div className="modal-footer">
-            <button className="btn btn-primary" onClick={onClose}>Done</button>
+            <button className="btn btn-primary" onClick={onClose} style={{ width: '100%' }}>Done</button>
           </div>
         </div>
       </div>
@@ -82,11 +115,11 @@ const MintAssetModal = ({ onClose, onSuccess }) => {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal" onMouseDown={e => e.stopPropagation()}>
         <div className="modal-header">
           <span className="modal-title">Mint New Asset</span>
-          <button className="modal-close" onClick={onClose}><X size={18} /></button>
+          <button type="button" className="modal-close" onClick={onClose}><X size={18} /></button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
@@ -119,6 +152,20 @@ const MintAssetModal = ({ onClose, onSuccess }) => {
                 <label className="form-label">Description</label>
                 <textarea className="form-textarea" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Asset description..." />
               </div>
+              
+              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <label className="form-label">Upload Proof / Document</label>
+                <input 
+                  type="file" 
+                  className="form-input" 
+                  onChange={e => setFile(e.target.files[0])} 
+                  style={{ padding: '0.5rem' }} 
+                />
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                  Optional: Upload a certificate, license, image, or proof document. A real SHA-256 hash will be generated for blockchain integrity.
+                </div>
+              </div>
+
               <div className="form-group">
                 <label className="form-label">Location</label>
                 <input className="form-input" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Office / Building" />
@@ -178,11 +225,11 @@ const TransferModal = ({ asset, onClose, onSuccess }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal" onMouseDown={e => e.stopPropagation()}>
         <div className="modal-header">
           <span className="modal-title">Transfer Asset</span>
-          <button className="modal-close" onClick={onClose}><X size={18} /></button>
+          <button type="button" className="modal-close" onClick={onClose}><X size={18} /></button>
         </div>
         {done ? (
           <>
@@ -258,11 +305,11 @@ const AssetDetailModal = ({ asset, onClose }) => {
   }, [asset.id]);
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 640 }} onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal" style={{ maxWidth: 640 }} onMouseDown={e => e.stopPropagation()}>
         <div className="modal-header">
           <span className="modal-title">Asset Details — {asset.assetCode}</span>
-          <button className="modal-close" onClick={onClose}><X size={18} /></button>
+          <button type="button" className="modal-close" onClick={onClose}><X size={18} /></button>
         </div>
         <div className="modal-body">
           {loading ? (
@@ -288,13 +335,51 @@ const AssetDetailModal = ({ asset, onClose }) => {
                     <div className="form-label">Description</div>
                     <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: 4 }}>{detail.description || '—'}</div>
                   </div>
-                  <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: 0 }}>
-                    <div className="form-label">Mint Transaction</div>
-                    <div className="mono" style={{ display: 'block', marginTop: 4, wordBreak: 'break-all' }}>{detail.mintTxHash || '—'}</div>
+                </div>
+
+                <div className="panel" style={{ padding: '1.25rem', marginTop: '1.5rem', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: '#0f172a', fontWeight: 600, fontSize: '1rem' }}>
+                    <ShieldCheck size={20} style={{ color: '#10b981' }} />
+                    Blockchain Proof
                   </div>
-                  <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: 0 }}>
-                    <div className="form-label">Metadata Hash</div>
-                    <div className="mono" style={{ display: 'block', marginTop: 4, wordBreak: 'break-all', fontSize: '0.7rem' }}>{detail.metadataHash || '—'}</div>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div>
+                      <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Network</div>
+                      <div style={{ fontWeight: 500, marginTop: 4 }}>{getExplorerNetworkName()}</div>
+                    </div>
+                    <div>
+                      <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Status</div>
+                      <div style={{ marginTop: 4 }}><span className="badge badge-success">✓ Confirmed</span></div>
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Contract Address</div>
+                      <div className="mono" style={{ marginTop: 4 }}>
+                        <a href={getAddressExplorerUrl(import.meta.env.VITE_ASSET_REGISTRY_ADDRESS || '0xa5806e903472aBf33C820Bf2e7326D6c8470a5BD')} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: '#3b82f6' }}>
+                          {import.meta.env.VITE_ASSET_REGISTRY_ADDRESS || '0xa5806e903472aBf33C820Bf2e7326D6c8470a5BD'}
+                        </a>
+                      </div>
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Transaction Hash</div>
+                      <div className="mono" style={{ marginTop: 4, wordBreak: 'break-all' }}>
+                        {detail.mintTxHash ? (
+                          <a href={getExplorerUrl(detail.mintTxHash)} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: '#3b82f6' }}>
+                            {detail.mintTxHash}
+                          </a>
+                        ) : '—'}
+                      </div>
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Metadata Hash (SHA-256)</div>
+                      <div className="mono" style={{ marginTop: 4, wordBreak: 'break-all', fontSize: '0.75rem' }}>{detail.metadataHash || '—'}</div>
+                    </div>
+                    
+                    <div style={{ gridColumn: '1 / -1', marginTop: '0.5rem' }}>
+                      <a href={getExplorerUrl(detail.mintTxHash)} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm" style={{ padding: '0.5rem 1rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'white', border: '1px solid #cbd5e1' }}>
+                        View on Polygon Explorer <ExternalLink size={14} />
+                      </a>
+                    </div>
                   </div>
                 </div>
 

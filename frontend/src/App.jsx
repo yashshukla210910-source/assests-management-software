@@ -12,6 +12,7 @@ import { Verification } from './pages/Verification';
 import { Transactions } from './pages/Transactions';
 import { Notifications } from './pages/Notifications';
 import { Administration } from './pages/Administration';
+import { APP_CONFIG } from './config/constants';
 
 // ─── Login Page ───────────────────────────────────────────────────────────────
 
@@ -39,7 +40,7 @@ const Login = () => {
 
       const { ethers } = await import('ethers');
       const wallet = new ethers.Wallet(privateKey);
-      const message = `Sign this message to authenticate with DecentraVault. Nonce: ${nonce}`;
+      const message = `Sign this message to authenticate with ${APP_CONFIG.BRAND_NAME}. Nonce: ${nonce}`;
       const signature = await wallet.signMessage(message);
 
       const result = await loginWithDid(did, signature, nonce);
@@ -54,7 +55,7 @@ const Login = () => {
 
   return (
     <div className="login-page">
-      {/* Left panel — branding */}
+      {/* Left panel — branding and image */}
       <div className="login-left">
         <div className="login-brand">
           <div className="login-logo">
@@ -63,7 +64,7 @@ const Login = () => {
               <path d="M7 11V7a5 5 0 0110 0v4"/>
             </svg>
           </div>
-          <span className="login-brand-name">DecentraVault</span>
+          <span className="login-brand-name">{APP_CONFIG.BRAND_NAME}</span>
         </div>
 
         <div className="login-hero">
@@ -92,7 +93,7 @@ const Login = () => {
         </div>
 
         <div className="login-footer-left">
-          DecentraVault Platform v1.0 · Enterprise Edition
+          {APP_CONFIG.BRAND_NAME} Platform v{APP_CONFIG.VERSION} · Enterprise Edition
         </div>
       </div>
 

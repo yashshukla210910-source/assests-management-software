@@ -6,6 +6,8 @@ const { success, error, paginate } = require('../utils/response');
 const { requireAuth } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/rbac');
 const blockchain = require('../services/blockchain');
+const upload = require('../middleware/upload');
+const fs = require('fs');
 
 const router = express.Router();
 
@@ -98,9 +100,9 @@ router.get('/', requireAuth, requirePermission('asset.read'), async (req, res, n
 
 /**
  * @route POST /api/v1/assets
- * @desc Mint a new asset
+ * @desc Mint a new asset (supports file upload for physical/digital documents)
  */
-router.post('/', requireAuth, requirePermission('asset.create'), validate([
+router.post('/', requireAuth, requirePermission('asset.create'), upload.single('document'), validate([
   body('assetCode').notEmpty().withMessage('Asset code required'),
   body('name').notEmpty().withMessage('Name required'),
   body('category').notEmpty().withMessage('Category required'),
@@ -108,23 +110,47 @@ router.post('/', requireAuth, requirePermission('asset.create'), validate([
 ]), async (req, res, next) => {
   try {
     const { assetCode, name, category, description, location, metadata, ownerDid } = req.body;
-
+    
     // 1. Validate uniqueness
     const existing = await prisma.asset.findUnique({ where: { assetCode } });
-    if (existing) return error(res, 'Asset code already exists', 409);
+    if (existing) {
+      if (req.file) fs.unlinkSync(req.file.path); // clean up
+      return error(res, 'Asset code already exists', 409);
+    }
 
     // 2. Validate target DID if provided
     let targetDid = 'PLATFORM';
     let targetUserId = null;
     if (ownerDid && ownerDid !== 'PLATFORM') {
       const dbDid = await prisma.did.findUnique({ where: { did: ownerDid } });
-      if (!dbDid) return error(res, 'Target DID not found', 404);
+      if (!dbDid) {
+        if (req.file) fs.unlinkSync(req.file.path); // clean up
+        return error(res, 'Target DID not found', 404);
+      }
       targetDid = dbDid.did;
       targetUserId = dbDid.userId;
     }
 
+    // 2.5 Handle Document Upload (if any)
+    let documentHash = null;
+    let documentUrl = null;
+    if (req.file) {
+      // Calculate real SHA-256 hash of the uploaded file
+      const fileBuffer = fs.readFileSync(req.file.path);
+      documentHash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+      documentUrl = `/uploads/${req.file.filename}`;
+    }
+
     // 3. Prepare Metadata Hash
-    const offchainData = { assetCode, name, category, description, location, metadata };
+    const offchainData = { 
+      assetCode, 
+      name, 
+      category, 
+      description, 
+      location, 
+      metadata,
+      ...(documentHash && { documentHash, documentUrl }) 
+    };
     const metadataString = JSON.stringify(offchainData);
     const metadataHash = crypto.createHash('sha256').update(metadataString).digest('hex');
     const bytes32MetadataHash = '0x' + metadataHash;
@@ -174,9 +200,20 @@ router.post('/', requireAuth, requirePermission('asset.create'), validate([
           key: k,
           value: String(metadata[k])
         }));
+        if (documentHash) {
+          metadataArray.push({ assetId: newAsset.id, key: '_documentHash', value: documentHash });
+          metadataArray.push({ assetId: newAsset.id, key: '_documentUrl', value: documentUrl });
+        }
         if (metadataArray.length > 0) {
           await txPrisma.assetMetadata.createMany({ data: metadataArray });
         }
+      } else if (documentHash) {
+        await txPrisma.assetMetadata.createMany({
+          data: [
+            { assetId: newAsset.id, key: '_documentHash', value: documentHash },
+            { assetId: newAsset.id, key: '_documentUrl', value: documentUrl }
+          ]
+        });
       }
 
       await txPrisma.ownershipRecord.create({
