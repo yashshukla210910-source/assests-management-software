@@ -1105,3 +1105,5 @@ td.text-primary { color: var(--text-primary); font-weight: 500; }
 .fw-700 { font-weight: 700; }
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .animate-in { animation: fadeIn 0.18s ease; }
+
+}
