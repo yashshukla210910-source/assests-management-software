@@ -14,7 +14,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: RPC_URL
-        value: https://rpc.ankr.com/eth_sepolia
+        value: https://ethereum-sepolia-rpc.publicnode.com
       - key: PRIVATE_KEY
         value: YOUR_SEPOLIA_PRIVATE_KEY_HERE
 
