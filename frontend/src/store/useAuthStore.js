@@ -86,15 +86,7 @@ export const useAuthStore = create((set, get) => ({
         set({ isLoading: false });
       }
     } else {
-      // DEV/DEMO OVERRIDE: Automatically log in anyone visiting the site as Admin
-      const fakeAdminUser = {
-        id: 'DEMO-ADMIN-ID',
-        email: 'admin@decentravault.com',
-        name: 'System Admin (Demo)',
-        roles: ['admin'],
-        did: 'did:ethr:11155111:0x19aAcE4EA11C6B9DD7Df8Df081d7154105383183'
-      };
-      set({ user: fakeAdminUser, isAuthenticated: true, isLoading: false });
+      set({ isLoading: false });
     }
   },
 
