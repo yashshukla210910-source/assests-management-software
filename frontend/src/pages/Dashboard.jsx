@@ -202,7 +202,7 @@ export const Dashboard = () => {
 
   // ── Quick actions (filtered by role)
   const quickActions = [
-    { label: 'Register Identity', sub: 'Create new DID-backed identity', action: () => navigate('/identities'), icon: Users, color: '#2563eb', show: isAdmin || isManager },
+    { label: 'Register Identity', sub: 'Create new DID-backed identity', action: () => navigate('/identities'), icon: Users, color: '#2563eb', show: isAdmin },
     { label: 'Mint Asset', sub: 'Tokenize a new asset', action: () => navigate('/assets'), icon: Package, color: '#7c3aed', show: isAdmin || isManager },
     { label: 'Verify Identity', sub: 'Check DID on blockchain', action: () => navigate('/verification'), icon: ShieldCheck, color: '#16a34a', show: true },
     { label: 'Audit Trail', sub: 'View compliance records', action: () => navigate('/audit'), icon: Activity, color: '#d97706', show: true },

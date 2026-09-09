@@ -364,7 +364,7 @@ export const Identities = () => {
   const [showCreate, setShowCreate] = React.useState(false);
   const [detailIdentity, setDetailIdentity] = React.useState(null);
   const user = useAuthStore(s => s.user);
-  const canCreate = user?.roles?.includes('admin') || user?.roles?.includes('manager');
+  const canCreate = user?.roles?.includes('admin');
   const LIMIT = 10;
 
   const fetchIdentities = React.useCallback(async () => {
