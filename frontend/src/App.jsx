@@ -12,6 +12,7 @@ import { Verification } from './pages/Verification';
 import { Transactions } from './pages/Transactions';
 import { Notifications } from './pages/Notifications';
 import { Administration } from './pages/Administration';
+import { LandingPage } from './pages/LandingPage';
 import { APP_CONFIG } from './config/constants';
 
 // ─── Login Page ───────────────────────────────────────────────────────────────
@@ -196,11 +197,13 @@ const App = () => {
       <Routes>
         <Route
           path="/login"
-          element={isAuthenticated ? <Navigate to="/" replace /> : <Login />}
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />}
         />
 
+        <Route path="/" element={<LandingPage />} />
+
         <Route
-          path="/"
+          path="/dashboard"
           element={
             <ProtectedRoute>
               <DashboardLayout />
