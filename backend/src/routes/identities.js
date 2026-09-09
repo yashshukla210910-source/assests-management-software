@@ -6,6 +6,7 @@ const { success, error, paginate } = require('../utils/response');
 const { requireAuth } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/rbac');
 const { generateDidCredentials, encryptPrivateKey, generateDidDocument } = require('../utils/did');
+const { sendCredentialsEmail } = require('../services/mailer');
 const blockchain = require('../services/blockchain');
 
 const router = express.Router();
@@ -184,15 +185,27 @@ router.post('/', requireAuth, requirePermission('identity.create'), validate([
         }
       });
 
-      return { user: newUser, did: newDid };
+      return { user: newUser, did: newDid, privateKey };
     });
+
+    const returnedPrivateKey = result.privateKey || 'EXTERNAL_WALLET';
+
+    // Send email with credentials to the newly created user
+    const loginUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/login` : 'https://your-frontend-url.com/login';
+    await sendCredentialsEmail(
+      email,
+      name,
+      result.did.did,
+      returnedPrivateKey,
+      loginUrl
+    );
 
     return success(res, {
       did: result.did.did,
       address,
       txHash,
       userId: result.user.id,
-      privateKey: privateKey || 'EXTERNAL_WALLET',
+      privateKey: returnedPrivateKey,
       temporaryPassword: password ? undefined : actualPassword
     }, 201);
   } catch (err) {

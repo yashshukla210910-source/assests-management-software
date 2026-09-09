@@ -81,12 +81,13 @@ async function main() {
   }
 
   // 3. Assign Permissions to Roles
-  // Manager gets most permissions except admin
+  // Manager gets most permissions except admin and identity creation
   const managerPermissions = [
-    'identity.read', 'identity.create', 'identity.update', 'identity.verify',
+    'identity.read', 'identity.update', 'identity.verify',
     'asset.read', 'asset.create', 'asset.update', 'asset.transfer', 'asset.verify',
     'role.read', 'audit.read', 'notification.read'
   ];
+  await prisma.rolePermission.deleteMany({ where: { roleId: managerRole.id } });
   for (const key of managerPermissions) {
     await prisma.rolePermission.upsert({
       where: { roleId_permissionId: { roleId: managerRole.id, permissionId: permissions[key].id } },
@@ -102,6 +103,7 @@ async function main() {
     'role.read', 'audit.read', 'audit.export',
     'notification.read'
   ];
+  await prisma.rolePermission.deleteMany({ where: { roleId: auditorRole.id } });
   for (const key of auditorPermissions) {
     await prisma.rolePermission.upsert({
       where: { roleId_permissionId: { roleId: auditorRole.id, permissionId: permissions[key].id } },
@@ -114,6 +116,7 @@ async function main() {
   const userPermissions = [
     'identity.read', 'asset.read', 'asset.verify', 'notification.read'
   ];
+  await prisma.rolePermission.deleteMany({ where: { roleId: userRole.id } });
   for (const key of userPermissions) {
     await prisma.rolePermission.upsert({
       where: { roleId_permissionId: { roleId: userRole.id, permissionId: permissions[key].id } },
