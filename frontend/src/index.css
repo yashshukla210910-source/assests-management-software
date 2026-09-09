@@ -100,7 +100,7 @@ input, select, textarea, button { font-family: inherit; }
   content: '';
   position: absolute;
   inset: 0;
-  background: url('/login-bg.jpg') center/cover no-repeat;
+  background: url('/login-hero.jpg') center/cover no-repeat;
   z-index: 0;
 }
 

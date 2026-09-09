@@ -54,140 +54,112 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf8ff] text-[#131b2e] flex flex-col antialiased">
-      <header className="w-full bg-[#ffffff] border-b border-[#bfc7d2] flex justify-between items-center px-6 h-14 z-30 shadow-sm shrink-0">
-        <div className="flex items-center gap-2">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#006194" strokeWidth="2.5">
-            <rect x="3" y="11" width="18" height="11" rx="2"/>
-            <path d="M7 11V7a5 5 0 0110 0v4"/>
-          </svg>
-          <span className="font-semibold text-lg text-[#006194] tracking-tight">{APP_CONFIG.BRAND_NAME} Infrastructure</span>
+    <div className="login-page">
+      {/* Left panel — branding and image */}
+      <div className="login-left">
+        <div className="login-brand">
+          <div className="login-logo">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <rect x="3" y="11" width="18" height="11" rx="2"/>
+              <path d="M7 11V7a5 5 0 0110 0v4"/>
+            </svg>
+          </div>
+          <span className="login-brand-name">{APP_CONFIG.BRAND_NAME}</span>
         </div>
-        <div className="flex items-center">
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-[#F0FDFA] text-[#0D9488] border border-[#CCFBF1]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#0D9488] animate-pulse"></span>
-            System Operational
-          </span>
-        </div>
-      </header>
 
-      <main className="flex-1 flex flex-col md:flex-row w-full">
-        {/* Left Side: Architectural Image */}
-        <div className="relative w-full md:w-1/2 h-48 md:h-auto bg-[#dae2fd] overflow-hidden flex-shrink-0">
-          <img 
-            alt="Corporate Tower" 
-            className="w-full h-full object-cover object-center absolute inset-0" 
-            src="/login-hero.jpg"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#ffffff]/50 via-transparent to-[#ffffff]/20"></div>
-          
-          <div className="absolute bottom-6 left-6 right-6 hidden md:block">
-            <div className="bg-[#ffffff]/90 backdrop-blur-md border border-[#bfc7d2] rounded-lg p-4 shadow-lg inline-block">
-              <h3 className="font-bold text-[#006194] mb-1">Institutional Gateway</h3>
-              <p className="text-sm text-[#3f4850]">Secure, zero-knowledge KMS for decentralized asset management.</p>
-            </div>
+        <div className="login-hero">
+          <h1 className="login-hero-title">
+            Enterprise Identity<br/>& Asset Management
+          </h1>
+          <p className="login-hero-sub">
+            Secure, role-based access to your organization's digital assets and decentralized identities — anchored on Ethereum.
+          </p>
+          <div className="login-features">
+            {[
+              { icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z', label: 'W3C Decentralized Identifiers' },
+              { icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z', label: 'Enterprise Role-Based Access Control' },
+              { icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z', label: 'Immutable Blockchain Audit Trail' },
+            ].map(f => (
+              <div key={f.label} className="login-feature">
+                <div className="login-feature-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d={f.icon} />
+                  </svg>
+                </div>
+                <span>{f.label}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Right Side: Login Form */}
-        <div className="w-full md:w-1/2 flex items-center justify-center p-6 lg:p-12 bg-[#faf8ff] relative z-10">
-          <div className="w-full max-w-md bg-[#ffffff] rounded-xl border border-[#bfc7d2] p-8 shadow-md">
-            
-            <div className="pb-6 border-b border-[#eaedff]">
-              <div className="flex items-center justify-between mb-2">
-                <h1 className="text-2xl font-bold text-[#131b2e]">Enterprise Sign In</h1>
-                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-[#eef0ff] text-[#006398] border border-[#cce5ff] flex items-center gap-1">
-                  FIPS 140-2
-                </span>
+        <div className="login-footer-left">
+          {APP_CONFIG.BRAND_NAME} Platform v{APP_CONFIG.VERSION} · Enterprise Edition
+        </div>
+      </div>
+
+      {/* Right panel — form */}
+      <div className="login-right">
+        <div className="login-form-container">
+          <div className="login-form-header">
+            <h2 className="login-form-title">Sign in</h2>
+            <p className="login-form-sub">
+              Authenticate using your decentralized identity.
+            </p>
+          </div>
+
+          {error && (
+            <div className="login-error">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleDidLogin} className="login-form" noValidate>
+            <div className="login-field">
+              <label htmlFor="did" className="login-label">Decentralized Identifier (DID)</label>
+              <input
+                id="did" type="text" className="login-input"
+                value={did} onChange={e => setDid(e.target.value)}
+                placeholder="did:ethr:11155111:0x..."
+                required disabled={submitting}
+                autoComplete="username"
+              />
+            </div>
+
+            <div className="login-field">
+              <label htmlFor="privateKey" className="login-label">Private Key</label>
+              <div className="login-input-group">
+                <input
+                  id="privateKey"
+                  type={showPassword ? 'text' : 'password'}
+                  className="login-input"
+                  value={privateKey} onChange={e => setPrivateKey(e.target.value)}
+                  placeholder="0x..."
+                  required disabled={submitting}
+                  autoComplete="current-password"
+                />
+                <button type="button" className="login-eye-btn" onClick={() => setShowPassword(v => !v)} tabIndex={-1}>
+                  {showPassword ? (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  ) : (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  )}
+                </button>
               </div>
-              <p className="text-sm text-[#3f4850]">
-                Authenticate institutional access via decentralized credential.
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                Your key is used locally to sign the authentication challenge and is never transmitted.
               </p>
             </div>
 
-            {error && (
-              <div className="mt-6 p-3 rounded-lg bg-[#ffdad6] border border-[#93000a] text-[#ba1a1a] text-sm flex items-start gap-2">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mt-0.5 shrink-0">
-                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-                <span>{error}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleDidLogin} className="space-y-5 mt-6" noValidate>
-              
-              <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label htmlFor="did" className="text-sm font-semibold text-[#131b2e]">Decentralized Identifier (DID)</label>
-                </div>
-                <div className="relative flex items-center rounded-lg border border-[#707881] bg-[#ffffff] focus-within:border-[#006194] focus-within:ring-1 focus-within:ring-[#006194] transition-all">
-                  <div className="pl-3 flex items-center pointer-events-none text-[#707881]">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                  </div>
-                  <input
-                    id="did" type="text"
-                    className="w-full border-0 bg-transparent py-2.5 pl-2 pr-3 text-[#131b2e] placeholder:text-[#bfc7d2] focus:ring-0 focus:outline-none text-sm font-mono"
-                    value={did} onChange={e => setDid(e.target.value)}
-                    placeholder="did:ethr:11155111:0x..."
-                    required disabled={submitting}
-                    autoComplete="username"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label htmlFor="privateKey" className="text-sm font-semibold text-[#131b2e]">Private Key</label>
-                </div>
-                <div className="relative flex items-center rounded-lg border border-[#707881] bg-[#ffffff] focus-within:border-[#006194] focus-within:ring-1 focus-within:ring-[#006194] transition-all">
-                  <div className="pl-3 flex items-center pointer-events-none text-[#707881]">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                  </div>
-                  <input
-                    id="privateKey"
-                    type={showPassword ? 'text' : 'password'}
-                    className="w-full border-0 bg-transparent py-2.5 pl-2 pr-10 text-[#131b2e] placeholder:text-[#bfc7d2] focus:ring-0 focus:outline-none text-sm font-mono"
-                    value={privateKey} onChange={e => setPrivateKey(e.target.value)}
-                    placeholder="0x..."
-                    required disabled={submitting}
-                    autoComplete="current-password"
-                  />
-                  <button type="button" className="absolute right-2 p-1 text-[#707881] hover:text-[#131b2e] transition-colors" onClick={() => setShowPassword(v => !v)} tabIndex={-1}>
-                    {showPassword ? (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                    ) : (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    )}
-                  </button>
-                </div>
-                <div className="mt-2 flex items-center text-xs text-[#707881]">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#006194]"></span>
-                    Key is used locally to sign challenge. Never transmitted.
-                  </span>
-                </div>
-              </div>
-
-              <button 
-                type="submit" 
-                disabled={submitting || isLoading}
-                className="w-full mt-4 bg-[#006194] hover:bg-[#004b73] text-[#ffffff] font-semibold py-2.5 px-4 rounded-lg shadow-sm transition-colors duration-200 flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {submitting && <span className="animate-spin h-4 w-4 border-2 border-[#ffffff] border-t-transparent rounded-full" />}
-                {submitting ? 'Authenticating...' : 'Authenticate & Access Vault'}
-              </button>
-            </form>
-
-            <div className="mt-8 pt-6 border-t border-[#eaedff] flex justify-center gap-4 text-xs text-[#707881] font-medium">
-              <span>SOC2 Type II</span>
-              <span>•</span>
-              <span>ISO 27001</span>
-              <span>•</span>
-              <span>End-to-End ZK</span>
-            </div>
-          </div>
+            <button type="submit" className="login-btn" disabled={submitting || isLoading}>
+              {submitting && <span className="spinner-sm" />}
+              {submitting ? 'Verifying signature…' : 'Sign in with DID'}
+            </button>
+          </form>
         </div>
-      </main>
+      </div>
     </div>
   );
 };
