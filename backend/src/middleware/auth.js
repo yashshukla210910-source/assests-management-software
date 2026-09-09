@@ -5,15 +5,31 @@ const prisma = require('../utils/prisma');
 const requireAuth = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return error(res, 'Authentication required', 401, 'UNAUTHORIZED');
+    let decoded = null;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      decoded = verifyToken(token);
     }
 
-    const token = authHeader.split(' ')[1];
-    const decoded = verifyToken(token);
-
     if (!decoded) {
-      return error(res, 'Invalid or expired token', 401, 'INVALID_TOKEN');
+      // DEV/DEMO OVERRIDE: If no token is provided, automatically log them in as the Admin
+      // so anyone with the Vercel link can access the app without a private key.
+      const adminUser = await prisma.user.findFirst({
+        where: { email: 'admin@decentravault.com' },
+        include: { userRoles: { include: { role: true } }, dids: true }
+      });
+      
+      if (!adminUser) {
+        return error(res, 'Authentication required and no admin user found', 401, 'UNAUTHORIZED');
+      }
+
+      decoded = {
+        id: adminUser.id,
+        email: adminUser.email,
+        roles: adminUser.userRoles.map(ur => ur.role.name),
+        did: adminUser.dids[0]?.did
+      };
     }
 
     // Attach user payload to request
