@@ -143,11 +143,8 @@ export const DashboardLayout = () => {
       <aside className="sidebar">
         {/* Logo */}
         <div className="sidebar-header">
-          <div className="sidebar-logo">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <rect x="3" y="11" width="18" height="11" rx="2"/>
-              <path d="M7 11V7a5 5 0 0110 0v4"/>
-            </svg>
+          <div className="sidebar-logo" style={{ overflow: 'hidden', padding: 0 }}>
+            <img src="/surakshavault-logo.jpg" alt="SurakshaVault Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <span className="sidebar-brand">{APP_CONFIG.BRAND_NAME}</span>
         </div>
