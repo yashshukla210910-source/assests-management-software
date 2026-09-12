@@ -1,5 +1,5 @@
 module.exports = {
   APP_CONFIG: {
-    BRAND_NAME: 'Platform Name',
+    BRAND_NAME: 'SurakshaVault',
   }
 };
