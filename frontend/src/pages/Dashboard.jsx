@@ -164,7 +164,7 @@ export const Dashboard = () => {
       sub: `${stats?.activeIdentities ?? 0} active`,
       icon: Users,
       color: '#2563eb',
-      action: () => navigate('/identities')
+      action: () => navigate('/dashboard/identities')
     },
     {
       label: 'Active Identities',
@@ -172,7 +172,7 @@ export const Dashboard = () => {
       sub: 'DID-verified',
       icon: ShieldCheck,
       color: '#16a34a',
-      action: () => navigate('/identities')
+      action: () => navigate('/dashboard/identities')
     },
     {
       label: 'Total Assets',
@@ -180,7 +180,7 @@ export const Dashboard = () => {
       sub: `${stats?.assignedAssets ?? 0} assigned`,
       icon: Package,
       color: '#7c3aed',
-      action: () => navigate('/assets')
+      action: () => navigate('/dashboard/assets')
     },
     {
       label: 'Audit Events',
@@ -188,7 +188,7 @@ export const Dashboard = () => {
       sub: 'Immutable records',
       icon: Activity,
       color: '#d97706',
-      action: () => navigate('/audit')
+      action: () => navigate('/dashboard/audit')
     },
     {
       label: 'Unread Alerts',
@@ -196,16 +196,16 @@ export const Dashboard = () => {
       sub: 'Notifications',
       icon: AlertCircle,
       color: stats?.unreadNotifications > 0 ? '#dc2626' : '#8898aa',
-      action: () => navigate('/notifications')
+      action: () => navigate('/dashboard/notifications')
     },
   ];
 
   // ── Quick actions (filtered by role)
   const quickActions = [
-    { label: 'Register Identity', sub: 'Create new DID-backed identity', action: () => navigate('/identities'), icon: Users, color: '#2563eb', show: isAdmin },
-    { label: 'Mint Asset', sub: 'Tokenize a new asset', action: () => navigate('/assets'), icon: Package, color: '#7c3aed', show: isAdmin || isManager },
-    { label: 'Verify Identity', sub: 'Check DID on blockchain', action: () => navigate('/verification'), icon: ShieldCheck, color: '#16a34a', show: true },
-    { label: 'Audit Trail', sub: 'View compliance records', action: () => navigate('/audit'), icon: Activity, color: '#d97706', show: true },
+    { label: 'Register Identity', sub: 'Create new DID-backed identity', action: () => navigate('/dashboard/identities'), icon: Users, color: '#2563eb', show: isAdmin },
+    { label: 'Mint Asset', sub: 'Tokenize a new asset', action: () => navigate('/dashboard/assets'), icon: Package, color: '#7c3aed', show: isAdmin || isManager },
+    { label: 'Verify Identity', sub: 'Check DID on blockchain', action: () => navigate('/dashboard/verification'), icon: ShieldCheck, color: '#16a34a', show: true },
+    { label: 'Audit Trail', sub: 'View compliance records', action: () => navigate('/dashboard/audit'), icon: Activity, color: '#d97706', show: true },
   ].filter(a => a.show);
 
   // ── Asset activity chart data
@@ -373,7 +373,7 @@ export const Dashboard = () => {
               <div className="panel-title">Recent Activity</div>
               <div className="panel-sub">Latest audit events across the platform</div>
             </div>
-            <button className="btn btn-ghost btn-sm" onClick={() => navigate('/audit')}>
+            <button className="btn btn-ghost btn-sm" onClick={() => navigate('/dashboard/audit')}>
               View all <ArrowRight size={13} />
             </button>
           </div>
@@ -398,7 +398,7 @@ export const Dashboard = () => {
                 </thead>
                 <tbody>
                   {activity.slice(0, 8).map(event => (
-                    <tr key={event.id} style={{ cursor: 'pointer' }} onClick={() => navigate('/audit')}>
+                    <tr key={event.id} style={{ cursor: 'pointer' }} onClick={() => navigate('/dashboard/audit')}>
                       <td>
                         <span className={`badge ${eventTypeBadge(event.eventType)}`}>
                           {eventTypeLabel(event.eventType)}
@@ -443,7 +443,7 @@ export const Dashboard = () => {
               <div className="panel-title">Recent Assets</div>
               <div className="panel-sub">Latest registered and assigned assets</div>
             </div>
-            <button className="btn btn-ghost btn-sm" onClick={() => navigate('/assets')}>
+            <button className="btn btn-ghost btn-sm" onClick={() => navigate('/dashboard/assets')}>
               View all <ArrowRight size={13} />
             </button>
           </div>
@@ -470,7 +470,7 @@ export const Dashboard = () => {
                     const owner = asset.ownershipRecords?.[0];
                     const ownerName = owner ? (owner.owner?.name || owner.didRecord?.user?.name || 'Unknown') : '—';
                     return (
-                      <tr key={asset.id} style={{ cursor: 'pointer' }} onClick={() => navigate('/assets')}>
+                      <tr key={asset.id} style={{ cursor: 'pointer' }} onClick={() => navigate('/dashboard/assets')}>
                         <td className="mono" style={{ fontSize: '0.8rem' }}>{asset.assetCode}</td>
                         <td style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{asset.name}</td>
                         <td style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{asset.category}</td>

@@ -89,16 +89,16 @@ const NotificationPanel = ({ onClose }) => {
 
 // ─── Page Title from route ────────────────────────────────────────────────────
 const PAGE_TITLES = {
-  '/': 'Dashboard',
-  '/identities': 'Identities',
-  '/verification': 'Verification',
-  '/assets': 'Assets',
-  '/roles': 'Roles & Permissions',
-  '/audit': 'Audit Trail',
-  '/transactions': 'Transactions',
-  '/notifications': 'Notifications',
-  '/administration': 'Administration',
-  '/settings': 'Settings',
+  '/dashboard': 'Dashboard',
+  '/dashboard/identities': 'Identities',
+  '/dashboard/verification': 'Verification',
+  '/dashboard/assets': 'Assets',
+  '/dashboard/roles': 'Roles & Permissions',
+  '/dashboard/audit': 'Audit Trail',
+  '/dashboard/transactions': 'Transactions',
+  '/dashboard/notifications': 'Notifications',
+  '/dashboard/administration': 'Administration',
+  '/dashboard/settings': 'Settings',
 };
 
 // ─── Dashboard Layout ─────────────────────────────────────────────────────────
@@ -151,26 +151,26 @@ export const DashboardLayout = () => {
 
         {/* Navigation */}
         <nav className="sidebar-nav">
-          <SidebarItem to="/" icon={LayoutDashboard} label="Dashboard" end />
+          <SidebarItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" end />
 
           <div className="nav-section-label">Identity</div>
-          <SidebarItem to="/identities" icon={Users} label="Identities" />
-          <SidebarItem to="/verification" icon={ShieldCheck} label="Verification" />
+          <SidebarItem to="/dashboard/identities" icon={Users} label="Identities" />
+          <SidebarItem to="/dashboard/verification" icon={ShieldCheck} label="Verification" />
 
           <div className="nav-section-label">Assets</div>
-          <SidebarItem to="/assets" icon={Package} label="Assets" />
+          <SidebarItem to="/dashboard/assets" icon={Package} label="Assets" />
 
           <div className="nav-section-label">Access</div>
-          <SidebarItem to="/roles" icon={Key} label="Roles & Permissions" />
+          <SidebarItem to="/dashboard/roles" icon={Key} label="Roles & Permissions" />
 
           <div className="nav-section-label">Compliance</div>
-          <SidebarItem to="/audit" icon={Activity} label="Audit Trail" />
-          <SidebarItem to="/transactions" icon={ArrowLeftRight} label="Transactions" />
+          <SidebarItem to="/dashboard/audit" icon={Activity} label="Audit Trail" />
+          <SidebarItem to="/dashboard/transactions" icon={ArrowLeftRight} label="Transactions" />
 
           <div className="nav-section-label">System</div>
-          <SidebarItem to="/notifications" icon={Bell} label="Notifications" />
-          {isAdmin && <SidebarItem to="/administration" icon={Building2} label="Administration" />}
-          <SidebarItem to="/settings" icon={Settings} label="Settings" />
+          <SidebarItem to="/dashboard/notifications" icon={Bell} label="Notifications" />
+          {isAdmin && <SidebarItem to="/dashboard/administration" icon={Building2} label="Administration" />}
+          <SidebarItem to="/dashboard/settings" icon={Settings} label="Settings" />
         </nav>
 
         {/* User Footer */}
