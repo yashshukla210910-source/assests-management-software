@@ -26,12 +26,12 @@ async function sendCredentialsEmail(to, name, did, privateKey, loginUrl) {
   }
 
   const mailOptions = {
-    from: `"DecentraVault Admin" <${process.env.SMTP_USER}>`,
+    from: `"SurakshaVault Admin" <${process.env.SMTP_USER}>`,
     to: to,
-    subject: 'Your New DecentraVault Identity Credentials',
+    subject: 'Your New SurakshaVault Identity Credentials',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2>Welcome to DecentraVault, ${name}!</h2>
+        <h2>Welcome to SurakshaVault, ${name}!</h2>
         <p>An administrator has created a new decentralized identity for you.</p>
         <p><strong>IMPORTANT:</strong> Please save the credentials below securely. You will need them to log in, and they will not be shown again.</p>
         
