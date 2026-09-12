@@ -190,15 +190,15 @@ router.post('/', requireAuth, requirePermission('identity.create'), validate([
 
     const returnedPrivateKey = result.privateKey || 'EXTERNAL_WALLET';
 
-    // Send email with credentials to the newly created user
+    // Send email with credentials asynchronously to prevent API timeout
     const loginUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/login` : 'https://your-frontend-url.com/login';
-    await sendCredentialsEmail(
+    sendCredentialsEmail(
       email,
       name,
       result.did.did,
       returnedPrivateKey,
       loginUrl
-    );
+    ).catch(e => console.error('Background email failed:', e));
 
     return success(res, {
       did: result.did.did,

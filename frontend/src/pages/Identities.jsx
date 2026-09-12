@@ -24,7 +24,7 @@ const CreateIdentityModal = ({ onClose, onSuccess }) => {
       setResult(data.data);
       onSuccess();
     } catch (err) {
-      setError(err.response?.data?.error?.message || 'Failed to create identity. Make sure email is unique.');
+      setError(err.response?.data?.error?.message || 'Failed to create identity. Please try again or check your network connection.');
     } finally {
       setLoading(false);
     }
