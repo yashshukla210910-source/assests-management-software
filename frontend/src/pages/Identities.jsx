@@ -285,7 +285,100 @@ const IdentityDetailsModal = ({ identity, onClose }) => {
   );
 };
 
-const ActionsMenu = ({ identity, onUpdate, onView }) => {
+const ManageRolesModal = ({ identity, onClose, onUpdate }) => {
+  const [loading, setLoading] = React.useState(false);
+  const [newRole, setNewRole] = React.useState('manager');
+  
+  if (!identity || !identity.user) return null;
+
+  const currentRoles = identity.user.userRoles || [];
+  const availableRoles = ['user', 'manager', 'auditor', 'admin'].filter(
+    r => !currentRoles.some(ur => ur.role.name === r)
+  );
+
+  const addRole = async () => {
+    if (!newRole) return;
+    setLoading(true);
+    try {
+      await api.post(`/users/${identity.user.id}/assign-role`, { roleName: newRole });
+      await onUpdate();
+      if (availableRoles.length > 1) {
+        setNewRole(availableRoles.find(r => r !== newRole) || '');
+      } else {
+        setNewRole('');
+      }
+    } catch (err) {
+      alert(err.response?.data?.error?.message || 'Failed to add role');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const revokeRole = async (roleName) => {
+    if (!confirm(`Are you sure you want to revoke the ${roleName} role?`)) return;
+    setLoading(true);
+    try {
+      await api.delete(`/users/${identity.user.id}/roles/${roleName}`);
+      await onUpdate();
+      setNewRole(roleName);
+    } catch (err) {
+      alert(err.response?.data?.error?.message || 'Failed to revoke role');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal" style={{ maxWidth: 500 }} onMouseDown={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <span className="modal-title">Manage Roles - {identity.user.name}</span>
+          <button type="button" className="modal-close" onClick={onClose}><X size={18} /></button>
+        </div>
+        <div className="modal-body">
+          <div className="form-label" style={{ marginBottom: 12 }}>Current Roles</div>
+          {currentRoles.length === 0 ? (
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: 16 }}>No active roles.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
+              {currentRoles.map(ur => (
+                <div key={ur.role.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-tertiary)', padding: '0.75rem 1rem', borderRadius: 8, border: '1px solid var(--border)' }}>
+                  <span className={`role-chip-${ur.role.name}`}>{ur.role.displayName || ur.role.name}</span>
+                  <button 
+                    className="btn btn-ghost btn-sm" 
+                    style={{ color: 'var(--danger)', padding: '4px 8px' }}
+                    onClick={() => revokeRole(ur.role.name)}
+                    disabled={loading || (ur.role.name === 'admin' && currentRoles.length === 1)}
+                  >
+                    Revoke
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="form-label" style={{ marginBottom: 12 }}>Add Role</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <select className="form-select" value={newRole} onChange={e => setNewRole(e.target.value)} disabled={loading || availableRoles.length === 0}>
+              {availableRoles.length === 0 && <option value="">All roles assigned</option>}
+              {availableRoles.map(r => (
+                <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
+              ))}
+            </select>
+            <button className="btn btn-primary" onClick={addRole} disabled={loading || availableRoles.length === 0 || !newRole}>
+              Add Role
+            </button>
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-ghost" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ActionsMenu = ({ identity, onUpdate, onView, onManageRoles }) => {
   const [open, setOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const isAdmin = useAuthStore(s => s.user?.roles?.includes('admin'));
@@ -322,6 +415,7 @@ const ActionsMenu = ({ identity, onUpdate, onView }) => {
         }}>
           {[
             { label: 'View Details', action: null, fn: () => { setOpen(false); onView(); } },
+            { label: 'Manage Roles', action: null, fn: () => { setOpen(false); onManageRoles(); } },
             identity.status === 'active'
               ? { label: 'Suspend', action: 'suspend', fn: () => doAction('suspend') }
               : identity.status === 'suspended'
@@ -363,6 +457,7 @@ export const Identities = () => {
   const [total, setTotal] = React.useState(0);
   const [showCreate, setShowCreate] = React.useState(false);
   const [detailIdentity, setDetailIdentity] = React.useState(null);
+  const [manageRoleIdentity, setManageRoleIdentity] = React.useState(null);
   const user = useAuthStore(s => s.user);
   const canCreate = user?.roles?.includes('admin');
   const LIMIT = 10;
@@ -511,7 +606,7 @@ export const Identities = () => {
                       {new Date(identity.createdAt).toLocaleDateString()}
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <ActionsMenu identity={identity} onUpdate={fetchIdentities} onView={() => setDetailIdentity(identity)} />
+                      <ActionsMenu identity={identity} onUpdate={fetchIdentities} onView={() => setDetailIdentity(identity)} onManageRoles={() => setManageRoleIdentity(identity)} />
                     </td>
                   </tr>
                 ))
@@ -544,6 +639,13 @@ export const Identities = () => {
         <IdentityDetailsModal 
           identity={detailIdentity} 
           onClose={() => setDetailIdentity(null)} 
+        />
+      )}
+      {manageRoleIdentity && (
+        <ManageRolesModal
+          identity={manageRoleIdentity}
+          onClose={() => setManageRoleIdentity(null)}
+          onUpdate={fetchIdentities}
         />
       )}
     </div>

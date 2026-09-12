@@ -93,4 +93,35 @@ router.post('/:id/assign-role', requireAuth, requirePermission('role.assign'), a
   }
 });
 
+/**
+ * @route DELETE /api/v1/users/:id/roles/:roleName
+ * @desc Revoke a role from a user
+ */
+router.delete('/:id/roles/:roleName', requireAuth, requirePermission('role.assign'), async (req, res, next) => {
+  try {
+    const { id, roleName } = req.params;
+
+    const role = await prisma.role.findUnique({ where: { name: roleName } });
+    if (!role) return error(res, 'Role not found', 404);
+
+    const userRole = await prisma.userRole.findFirst({
+      where: { userId: id, roleId: role.id, revokedAt: null }
+    });
+
+    if (!userRole) return error(res, 'User does not have this active role', 404);
+
+    await prisma.userRole.update({
+      where: { id: userRole.id },
+      data: {
+        revokedAt: new Date(),
+        revokedBy: req.user.id
+      }
+    });
+
+    return success(res, { message: 'Role revoked successfully' });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

@@ -306,109 +306,75 @@ const AssetDetailModal = ({ asset, onClose }) => {
 
   return (
     <div className="modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="modal" style={{ maxWidth: 640 }} onMouseDown={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <span className="modal-title">Asset Details — {asset.assetCode}</span>
+      <div className="modal" style={{ maxWidth: 500, padding: 0 }} onMouseDown={e => e.stopPropagation()}>
+        <div className="modal-header" style={{ padding: '1.5rem', borderBottom: 'none', paddingBottom: 0 }}>
           <button type="button" className="modal-close" onClick={onClose}><X size={18} /></button>
         </div>
-        <div className="modal-body">
+        <div className="modal-body" style={{ padding: '0 1.5rem 1.5rem 1.5rem' }}>
           {loading ? (
             <div className="loading-row"><div className="loading-spinner-large" style={{ width: 24, height: 24, borderWidth: 2 }} /></div>
           ) : (
             detail && (
-              <>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                  {[
-                    { label: 'Asset Code', value: detail.assetCode },
-                    { label: 'Category', value: categoryLabel(detail.category) },
-                    { label: 'Status', value: <span className={`badge ${statusBadge(detail.status)}`}>{detail.status}</span> },
-                    { label: 'Token ID', value: detail.tokenId ? <span className="mono">{detail.tokenId}</span> : '—' },
-                    { label: 'Location', value: detail.location || '—' },
-                    { label: 'Created', value: new Date(detail.createdAt).toLocaleString() },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="form-group" style={{ marginBottom: 0 }}>
-                      <div className="form-label">{label}</div>
-                      <div style={{ fontSize: '0.875rem', color: 'var(--text-primary)', marginTop: 4 }}>{value}</div>
-                    </div>
-                  ))}
-                  <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: 0 }}>
-                    <div className="form-label">Description</div>
-                    <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: 4 }}>{detail.description || '—'}</div>
-                  </div>
+              <div style={{ background: '#f4f4f5', borderRadius: '12px', padding: '1.5rem', fontFamily: 'monospace', fontSize: '14px', lineHeight: '1.6', color: '#18181b', wordBreak: 'break-all' }}>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  ASSET #{detail.assetCode}
+                </div>
+                
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <div style={{ color: '#3f3f46' }}>Physical Asset:</div>
+                  <div>{categoryLabel(detail.category)}</div>
                 </div>
 
-                <div className="panel" style={{ padding: '1.25rem', marginTop: '1.5rem', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: '#0f172a', fontWeight: 600, fontSize: '1rem' }}>
-                    <ShieldCheck size={20} style={{ color: '#10b981' }} />
-                    Blockchain Proof
-                  </div>
-                  
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div>
-                      <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Network</div>
-                      <div style={{ fontWeight: 500, marginTop: 4 }}>{getExplorerNetworkName()}</div>
-                    </div>
-                    <div>
-                      <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Status</div>
-                      <div style={{ marginTop: 4 }}><span className="badge badge-success">✓ Confirmed</span></div>
-                    </div>
-                    <div style={{ gridColumn: '1 / -1' }}>
-                      <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Contract Address</div>
-                      <div className="mono" style={{ marginTop: 4 }}>
-                        <a href={getAddressExplorerUrl(import.meta.env.VITE_ASSET_REGISTRY_ADDRESS || '0xa5806e903472aBf33C820Bf2e7326D6c8470a5BD')} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: '#3b82f6' }}>
-                          {import.meta.env.VITE_ASSET_REGISTRY_ADDRESS || '0xa5806e903472aBf33C820Bf2e7326D6c8470a5BD'}
-                        </a>
-                      </div>
-                    </div>
-                    <div style={{ gridColumn: '1 / -1' }}>
-                      <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Transaction Hash</div>
-                      <div className="mono" style={{ marginTop: 4, wordBreak: 'break-all' }}>
-                        {detail.mintTxHash ? (
-                          <a href={getExplorerUrl(detail.mintTxHash)} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: '#3b82f6' }}>
-                            {detail.mintTxHash}
-                          </a>
-                        ) : '—'}
-                      </div>
-                    </div>
-                    <div style={{ gridColumn: '1 / -1' }}>
-                      <div className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748b' }}>Metadata Hash (SHA-256)</div>
-                      <div className="mono" style={{ marginTop: 4, wordBreak: 'break-all', fontSize: '0.75rem' }}>{detail.metadataHash || '—'}</div>
-                    </div>
-                    
-                    <div style={{ gridColumn: '1 / -1', marginTop: '0.5rem' }}>
-                      <a href={getExplorerUrl(detail.mintTxHash)} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm" style={{ padding: '0.5rem 1rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'white', border: '1px solid #cbd5e1' }}>
-                        View on Polygon Explorer <ExternalLink size={14} />
-                      </a>
-                    </div>
-                  </div>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <div style={{ color: '#3f3f46' }}>Digital Representation:</div>
+                  <div>{detail.tokenId ? `NFT #${detail.tokenId}` : 'Pending Mint'}</div>
                 </div>
 
-                {detail.ownershipRecords?.length > 0 && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <div style={{ color: '#3f3f46' }}>Current Owner:</div>
                   <div>
-                    <div className="form-label" style={{ marginBottom: 8 }}>Ownership History</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {detail.ownershipRecords.map((rec, i) => (
-                        <div key={rec.id} style={{ background: 'var(--bg-tertiary)', borderRadius: 6, padding: '0.625rem 0.75rem', border: '1px solid var(--border)', fontSize: '0.8rem' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <span className={`badge ${rec.isCurrent ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '0.65rem' }}>
-                              {rec.action?.toUpperCase()} {rec.isCurrent ? '(Current)' : ''}
-                            </span>
-                            <span style={{ color: 'var(--text-muted)' }}>{new Date(rec.transferredAt).toLocaleDateString()}</span>
-                          </div>
-                          <div style={{ color: 'var(--text-secondary)', fontFamily: 'monospace', fontSize: '0.75rem', wordBreak: 'break-all' }}>
-                            Owner: {rec.ownerDid || '—'}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    {detail.ownershipRecords?.[0] ? (
+                      detail.ownershipRecords[0].owner?.name || detail.ownershipRecords[0].didRecord?.user?.name || detail.ownershipRecords[0].ownerDid
+                    ) : 'Platform'}
                   </div>
+                </div>
+
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <div style={{ color: '#3f3f46' }}>Previous Owner:</div>
+                  <div style={{ whiteSpace: 'pre-line' }}>
+                    {detail.ownershipRecords?.length > 1 
+                      ? detail.ownershipRecords.slice(1).map(rec => rec.owner?.name || rec.didRecord?.user?.name || rec.ownerDid).join('\n')
+                      : 'None'}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <div style={{ color: '#3f3f46' }}>Registered By:</div>
+                  <div>{detail.creator?.name || 'Unknown'}</div>
+                </div>
+
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <div style={{ color: '#3f3f46' }}>Transferred By:</div>
+                  <div>
+                    {detail.ownershipRecords?.[0]?.fromUser?.name || detail.ownershipRecords?.[0]?.fromDid || 'N/A'}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ color: '#3f3f46' }}>Status:</div>
+                  <div style={{ textTransform: 'capitalize' }}>{detail.status}</div>
+                </div>
+                
+                {detail.mintTxHash && (
+                   <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center' }}>
+                     <a href={getExplorerUrl(detail.mintTxHash)} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm" style={{ padding: '0.5rem 1rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '6px', color: '#3b82f6', textDecoration: 'none', fontFamily: 'Inter, sans-serif' }}>
+                       View Blockchain Tx <ExternalLink size={14} />
+                     </a>
+                   </div>
                 )}
-              </>
+              </div>
             )
           )}
-        </div>
-        <div className="modal-footer">
-          <button className="btn btn-ghost" onClick={onClose}>Close</button>
         </div>
       </div>
     </div>
