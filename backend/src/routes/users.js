@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const prisma = require('../utils/prisma');
 const { success, error, paginate } = require('../utils/response');
 const { requireAuth } = require('../middleware/auth');
@@ -87,6 +88,20 @@ router.post('/:id/assign-role', requireAuth, requirePermission('role.assign'), a
       data: { userId: req.params.id, roleId: role.id, assignedBy: req.user.id }
     });
 
+    const eventHash = crypto.createHash('sha256').update(`ROLE_ASSIGNED:${user.id}:${role.name}:${Date.now()}`).digest('hex');
+    await prisma.auditEvent.create({
+      data: {
+        eventType: 'ROLE_ASSIGNED',
+        actorUserId: req.user.id,
+        actorRole: req.user.roles?.[0] || 'admin',
+        entityType: 'user',
+        entityId: user.id,
+        action: 'assign_role',
+        payload: { roleName, roleId: role.id, assignedTo: user.email },
+        eventHash
+      }
+    });
+
     return success(res, { message: 'Role assigned successfully' });
   } catch (err) {
     next(err);
@@ -110,11 +125,27 @@ router.delete('/:id/roles/:roleName', requireAuth, requirePermission('role.assig
 
     if (!userRole) return error(res, 'User does not have this active role', 404);
 
+    const user = await prisma.user.findUnique({ where: { id } });
+    
     await prisma.userRole.update({
       where: { id: userRole.id },
       data: {
         revokedAt: new Date(),
         revokedBy: req.user.id
+      }
+    });
+
+    const eventHash = crypto.createHash('sha256').update(`ROLE_REVOKED:${id}:${role.name}:${Date.now()}`).digest('hex');
+    await prisma.auditEvent.create({
+      data: {
+        eventType: 'ROLE_REVOKED',
+        actorUserId: req.user.id,
+        actorRole: req.user.roles?.[0] || 'admin',
+        entityType: 'user',
+        entityId: id,
+        action: 'revoke_role',
+        payload: { roleName, roleId: role.id, revokedFrom: user?.email },
+        eventHash
       }
     });
 
