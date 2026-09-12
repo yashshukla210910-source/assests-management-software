@@ -1,6 +1,20 @@
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
+const dns = require('dns');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Force IPv4 because Render's outbound IPv6 routing often fails with ENETUNREACH
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
+
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.SMTP_PORT || '587'),
+  secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+  auth: {
+    user: (process.env.SMTP_USER || '').trim(), 
+    pass: (process.env.SMTP_PASS || '').trim(), 
+  },
+});
 
 /**
  * Sends an email with the newly generated DID and Private Key
@@ -11,36 +25,47 @@ const resend = new Resend(process.env.RESEND_API_KEY);
  * @param {string} loginUrl URL for the application login page
  */
 async function sendCredentialsEmail(to, name, did, privateKey, loginUrl) {
-  try {
-    const data = await resend.emails.send({
-      from: 'SurakshaVault Admin <onboarding@resend.dev>',
-      to: to,
-      subject: 'Your New SurakshaVault Identity Credentials',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Welcome to SurakshaVault, ${name}!</h2>
-          <p>An administrator has created a new decentralized identity for you.</p>
-          <p><strong>IMPORTANT:</strong> Please save the credentials below securely. You will need them to log in, and they will not be shown again.</p>
+  const user = (process.env.SMTP_USER || '').trim();
+  const pass = (process.env.SMTP_PASS || '').trim();
+
+  if (!user || !pass) {
+    console.log('SMTP credentials not configured. Skipping email send.');
+    console.log(`[MOCK EMAIL to ${to}] DID: ${did} | Key: ${privateKey}`);
+    return;
+  }
+
+  const mailOptions = {
+    from: `"SurakshaVault Admin" <${user}>`,
+    to: to,
+    subject: 'Your New SurakshaVault Identity Credentials',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Welcome to SurakshaVault, ${name}!</h2>
+        <p>An administrator has created a new decentralized identity for you.</p>
+        <p><strong>IMPORTANT:</strong> Please save the credentials below securely. You will need them to log in, and they will not be shown again.</p>
+        
+        <div style="background-color: #f8fafc; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+          <p style="margin: 0 0 10px 0;"><strong>DID:</strong></p>
+          <code style="word-break: break-all; color: #0f172a;">${did}</code>
           
-          <div style="background-color: #f8fafc; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
-            <p style="margin: 0 0 10px 0;"><strong>DID:</strong></p>
-            <code style="word-break: break-all; color: #0f172a;">${did}</code>
-            
-            <p style="margin: 15px 0 10px 0;"><strong>Private Key:</strong></p>
-            <code style="word-break: break-all; color: #b91c1c;">${privateKey}</code>
-          </div>
-          
-          <p>You can log in to the platform here: <a href="${loginUrl}">${loginUrl}</a></p>
-          
-          <p style="color: #64748b; font-size: 12px; margin-top: 30px;">
-            If you did not request this account, please contact your system administrator immediately.
-          </p>
+          <p style="margin: 15px 0 10px 0;"><strong>Private Key:</strong></p>
+          <code style="word-break: break-all; color: #b91c1c;">${privateKey}</code>
         </div>
-      `
-    });
-    console.log(`Successfully sent credentials email to ${to}:`, data);
+        
+        <p>You can log in to the platform here: <a href="${loginUrl}">${loginUrl}</a></p>
+        
+        <p style="color: #64748b; font-size: 12px; margin-top: 30px;">
+          If you did not request this account, please contact your system administrator immediately.
+        </p>
+      </div>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`Successfully sent credentials email to ${to}`);
   } catch (error) {
-    console.error(`Failed to send email to ${to} via Resend:`, error);
+    console.error(`Failed to send email to ${to}:`, error);
   }
 }
 
