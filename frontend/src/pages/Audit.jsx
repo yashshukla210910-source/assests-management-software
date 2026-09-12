@@ -7,6 +7,7 @@ const eventTypeColor = (type) => {
   if (type?.includes('TRANSFERRED')) return 'badge-blue';
   if (type?.includes('MINTED')) return 'badge-info';
   if (type?.includes('REVOKED') || type?.includes('SUSPENDED')) return 'badge-danger';
+  if (type?.includes('ASSIGNED')) return 'badge-info';
   if (type?.includes('LOGIN')) return 'badge-neutral';
   if (type?.includes('REACTIVATED')) return 'badge-success';
   return 'badge-neutral';
@@ -222,6 +223,8 @@ export const AuditLogs = () => {
             onChange={e => { setEventTypeFilter(e.target.value); setPage(1); }}
           >
             <option value="">All Event Types</option>
+            <option value="ROLE_ASSIGNED">Role Assigned</option>
+            <option value="ROLE_REVOKED">Role Revoked</option>
             <option value="IDENTITY_CREATED">Identity Created</option>
             <option value="IDENTITY_REVOKED">Identity Revoked</option>
             <option value="IDENTITY_SUSPENDED">Identity Suspended</option>
