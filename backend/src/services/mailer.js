@@ -5,8 +5,8 @@ const transporter = nodemailer.createTransport({
   port: parseInt(process.env.SMTP_PORT || '587'),
   secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
   auth: {
-    user: process.env.SMTP_USER, 
-    pass: process.env.SMTP_PASS, 
+    user: (process.env.SMTP_USER || '').trim(), 
+    pass: (process.env.SMTP_PASS || '').trim(), 
   },
 });
 
@@ -19,14 +19,17 @@ const transporter = nodemailer.createTransport({
  * @param {string} loginUrl URL for the application login page
  */
 async function sendCredentialsEmail(to, name, did, privateKey, loginUrl) {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+  const user = (process.env.SMTP_USER || '').trim();
+  const pass = (process.env.SMTP_PASS || '').trim();
+
+  if (!user || !pass) {
     console.log('SMTP credentials not configured. Skipping email send.');
     console.log(`[MOCK EMAIL to ${to}] DID: ${did} | Key: ${privateKey}`);
     return;
   }
 
   const mailOptions = {
-    from: `"SurakshaVault Admin" <${process.env.SMTP_USER}>`,
+    from: `"SurakshaVault Admin" <${user}>`,
     to: to,
     subject: 'Your New SurakshaVault Identity Credentials',
     html: `
