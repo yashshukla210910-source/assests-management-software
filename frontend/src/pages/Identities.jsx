@@ -146,11 +146,11 @@ const CreateIdentityModal = ({ onClose, onSuccess }) => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                 <label className="form-label">Full Name *</label>
-                <input className="form-input" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Alice Johnson" />
+                <input className="form-input" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="" />
               </div>
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                 <label className="form-label">Work Email *</label>
-                <input className="form-input" type="email" required value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="alice@company.com" />
+                <input className="form-input" type="email" required value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="" />
               </div>
               <div className="form-group">
                 <label className="form-label">Organization</label>
@@ -158,7 +158,7 @@ const CreateIdentityModal = ({ onClose, onSuccess }) => {
               </div>
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                 <label className="form-label">MetaMask Wallet Address (Optional)</label>
-                <input className="form-input" value={form.walletAddress || ''} onChange={e => setForm(f => ({ ...f, walletAddress: e.target.value }))} placeholder="0x..." />
+                <input className="form-input" value={form.walletAddress || ''} onChange={e => setForm(f => ({ ...f, walletAddress: e.target.value }))} placeholder="" />
                 <span className="form-error" style={{ color: 'var(--text-muted)' }}>Paste a user's MetaMask address to link it. If left blank, a random wallet will be generated.</span>
               </div>
               <div className="form-group">

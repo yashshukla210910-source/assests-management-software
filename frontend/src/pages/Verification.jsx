@@ -46,7 +46,7 @@ const DidVerifyPanel = () => {
             <label className="form-label">Decentralized Identifier (DID)</label>
             <input
               className="form-input"
-              placeholder="did:ethr:11155111:0x..."
+              placeholder=""
               value={did}
               onChange={e => setDid(e.target.value)}
               disabled={loading}
@@ -172,7 +172,7 @@ const AssetVerifyPanel = () => {
             <label className="form-label">Asset Code</label>
             <input
               className="form-input"
-              placeholder="ASSET-001"
+              placeholder=""
               value={assetCode}
               onChange={e => setAssetCode(e.target.value.toUpperCase())}
               disabled={loading}

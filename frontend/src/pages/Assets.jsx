@@ -132,7 +132,7 @@ const MintAssetModal = ({ onClose, onSuccess }) => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">Asset Code *</label>
-                <input className="form-input" required value={form.assetCode} onChange={e => setForm(f => ({ ...f, assetCode: e.target.value }))} placeholder="ASSET-005" />
+                <input className="form-input" required value={form.assetCode} onChange={e => setForm(f => ({ ...f, assetCode: e.target.value }))} placeholder="" />
               </div>
               <div className="form-group">
                 <label className="form-label">Category *</label>
@@ -146,7 +146,7 @@ const MintAssetModal = ({ onClose, onSuccess }) => {
               </div>
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                 <label className="form-label">Asset Name *</label>
-                <input className="form-input" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Dell XPS 15 Laptop" />
+                <input className="form-input" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="" />
               </div>
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                 <label className="form-label">Description</label>
