@@ -6,7 +6,6 @@ const { success, error, paginate } = require('../utils/response');
 const { requireAuth } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/rbac');
 const { generateDidCredentials, encryptPrivateKey, generateDidDocument } = require('../utils/did');
-const { sendCredentialsEmail } = require('../services/mailer');
 const blockchain = require('../services/blockchain');
 
 const router = express.Router();
@@ -189,16 +188,6 @@ router.post('/', requireAuth, requirePermission('identity.create'), validate([
     });
 
     const returnedPrivateKey = result.privateKey || 'EXTERNAL_WALLET';
-
-    // Send email with credentials asynchronously to prevent API timeout
-    const loginUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/login` : 'https://your-frontend-url.com/login';
-    sendCredentialsEmail(
-      email,
-      name,
-      result.did.did,
-      returnedPrivateKey,
-      loginUrl
-    ).catch(e => console.error('Background email failed:', e));
 
     return success(res, {
       did: result.did.did,
