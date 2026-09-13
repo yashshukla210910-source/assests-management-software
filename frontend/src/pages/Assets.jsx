@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Plus, ArrowRightLeft, RefreshCw, X, CheckCircle, AlertTriangle, Eye, ExternalLink, ShieldCheck } from 'lucide-react';
+import { Search, Plus, ArrowRightLeft, RefreshCw, X, CheckCircle, AlertTriangle, Eye, ExternalLink, ShieldCheck, FileText } from 'lucide-react';
 import api from '../utils/api';
 import { useAuthStore } from '../store/useAuthStore';
 import { getExplorerUrl, getExplorerNetworkName, getAddressExplorerUrl } from '../utils/explorer';
@@ -318,75 +318,99 @@ const AssetDetailModal = ({ asset, onClose }) => {
             <div className="loading-row"><div className="loading-spinner-large" style={{ width: 24, height: 24, borderWidth: 2 }} /></div>
           ) : (
             detail && (
-              <div style={{ background: '#f4f4f5', borderRadius: '12px', padding: '1.5rem', fontFamily: 'monospace', fontSize: '14px', lineHeight: '1.6', color: '#18181b', wordBreak: 'break-all' }}>
-                <div style={{ marginBottom: '1.5rem' }}>
-                  ASSET #{detail.assetCode}
-                </div>
-                
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <div style={{ color: '#3f3f46' }}>Physical Asset:</div>
-                  <div>{categoryLabel(detail.category)}</div>
-                </div>
-
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <div style={{ color: '#3f3f46' }}>Digital Representation:</div>
-                  <div>{detail.tokenId ? `NFT #${detail.tokenId}` : 'Pending Mint'}</div>
-                </div>
-
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <div style={{ color: '#3f3f46' }}>Current Owner:</div>
+              <div style={{ padding: '1rem 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
                   <div>
-                    {detail.ownershipRecords?.[0] ? (
-                      detail.ownershipRecords[0].owner?.name || detail.ownershipRecords[0].didRecord?.user?.name || detail.ownershipRecords[0].ownerDid
-                    ) : 'Platform'}
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+                      ASSET #{detail.assetCode}
+                    </h2>
+                    <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Detailed record of digital asset.</p>
+                  </div>
+                  <span className={`status-badge status-${detail.status.toLowerCase()}`}>
+                    {detail.status}
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                  <div style={{ background: 'var(--bg-secondary)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Physical Asset</div>
+                    <div style={{ fontSize: '1rem', fontWeight: '500', color: 'var(--text-primary)' }}>{categoryLabel(detail.category)}</div>
+                  </div>
+                  <div style={{ background: 'var(--bg-secondary)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Digital Representation</div>
+                    <div style={{ fontSize: '1rem', fontWeight: '500', color: 'var(--text-primary)' }}>
+                      {detail.tokenId ? `NFT #${detail.tokenId}` : 'Pending Mint'}
+                    </div>
                   </div>
                 </div>
 
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <div style={{ color: '#3f3f46' }}>Previous Owner:</div>
-                  <div style={{ whiteSpace: 'pre-line' }}>
-                    {detail.ownershipRecords?.length > 1 
-                      ? detail.ownershipRecords.slice(1).map(rec => rec.owner?.name || rec.didRecord?.user?.name || rec.ownerDid).join('\n')
-                      : 'None'}
+                <div style={{ marginBottom: '2rem' }}>
+                  <h3 style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>Ownership History</h3>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--primary-color)', marginTop: '6px' }} />
+                      <div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--primary-color)', textTransform: 'uppercase' }}>Current Owner</div>
+                        <div style={{ fontSize: '0.95rem', fontWeight: '500', color: 'var(--text-primary)' }}>
+                          {detail.ownershipRecords?.[0] ? (
+                            detail.ownershipRecords[0].owner?.name || detail.ownershipRecords[0].didRecord?.user?.name || detail.ownershipRecords[0].ownerDid
+                          ) : 'Platform'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--text-muted)', marginTop: '6px' }} />
+                      <div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Previous Owner</div>
+                        <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', whiteSpace: 'pre-line' }}>
+                          {detail.ownershipRecords?.length > 1 
+                            ? detail.ownershipRecords.slice(1).map(rec => rec.owner?.name || rec.didRecord?.user?.name || rec.ownerDid).join('\n')
+                            : 'None'}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <div style={{ color: '#3f3f46' }}>Registered By:</div>
-                  <div>{detail.creator?.name || 'Unknown'}</div>
-                </div>
-
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <div style={{ color: '#3f3f46' }}>Transferred By:</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
                   <div>
-                    {detail.ownershipRecords?.[0]?.fromUser?.name || detail.ownershipRecords?.[0]?.fromDid || 'N/A'}
+                    <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Registered By</div>
+                    <div style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>{detail.creator?.name || 'Unknown'}</div>
                   </div>
-                </div>
-
-                <div>
-                  <div style={{ color: '#3f3f46' }}>Status:</div>
-                  <div style={{ textTransform: 'capitalize' }}>{detail.status}</div>
+                  <div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Transferred By</div>
+                    <div style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                      {detail.ownershipRecords?.[0]?.fromUser?.name || detail.ownershipRecords?.[0]?.fromDid || 'N/A'}
+                    </div>
+                  </div>
                 </div>
 
                 {docHash && (
-                  <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px dashed #d4d4d8' }}>
-                    <div style={{ color: '#3f3f46', marginBottom: 4 }}>Physical Document Attachment:</div>
+                  <div style={{ marginBottom: '2rem', padding: '1.25rem', background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: 'var(--radius-md)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                      <FileText size={16} color="var(--primary-color)" />
+                      <span style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--text-primary)' }}>Physical Document Attachment</span>
+                    </div>
                     {docUrl && (
-                      <div style={{ marginBottom: 8 }}>
-                        <a href={`${import.meta.env.VITE_API_URL || 'http://localhost:10000'}${docUrl}`} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', textDecoration: 'underline' }}>
+                      <div style={{ marginBottom: '1rem' }}>
+                        <a href={`${import.meta.env.VITE_API_URL || 'http://localhost:10000'}${docUrl}`} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>
                           View Document
                         </a>
                       </div>
                     )}
-                    <div style={{ color: '#3f3f46', fontSize: '0.75rem' }}>SHA-256 Hash:</div>
-                    <div style={{ fontSize: '0.75rem', color: '#71717a' }}>{docHash}</div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>SHA-256 Checksum</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontFamily: 'monospace', wordBreak: 'break-all', background: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+                      {docHash}
+                    </div>
                   </div>
                 )}
                 
                 {detail.mintTxHash && (
-                   <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center' }}>
-                     <a href={getExplorerUrl(detail.mintTxHash)} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm" style={{ padding: '0.5rem 1rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'white', border: '1px solid #cbd5e1', borderRadius: '6px', color: '#3b82f6', textDecoration: 'none', fontFamily: 'Inter, sans-serif' }}>
-                       View Blockchain Tx <ExternalLink size={14} />
+                   <div style={{ display: 'flex', justifyContent: 'center' }}>
+                     <a href={getExplorerUrl(detail.mintTxHash)} target="_blank" rel="noreferrer" className="btn btn-ghost" style={{ border: '1px solid var(--border-color)', gap: '0.5rem' }}>
+                       View Blockchain Tx <ExternalLink size={16} />
                      </a>
                    </div>
                 )}
