@@ -132,6 +132,7 @@ const DidVerifyPanel = () => {
 // ─── Asset Verify Panel ───────────────────────────────────────────────────────
 const AssetVerifyPanel = () => {
   const [assetCode, setAssetCode] = React.useState('');
+  const [file, setFile] = React.useState(null);
   const [result, setResult] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState('');
@@ -143,8 +144,17 @@ const AssetVerifyPanel = () => {
     setError('');
     setResult(null);
     try {
-      const { data } = await api.get(`/verify/asset/${assetCode.trim()}`);
-      setResult({ verified: data.data.blockchain?.hashMatch !== false, asset: data.data });
+      if (file) {
+        const formData = new FormData();
+        formData.append('document', file);
+        const { data } = await api.post(`/verify/asset/${assetCode.trim()}/document`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        setResult({ verified: data.data.verified, reason: data.data.message, asset: data.data, isDocument: true });
+      } else {
+        const { data } = await api.get(`/verify/asset/${assetCode.trim()}`);
+        setResult({ verified: data.data.blockchain?.hashMatch !== false, asset: data.data, isDocument: false });
+      }
     } catch (err) {
       if (err.response?.status === 404) {
         setResult({ verified: false, reason: 'Asset not found in the registry.' });
@@ -167,18 +177,28 @@ const AssetVerifyPanel = () => {
       </div>
 
       <div style={{ padding: '1.25rem' }}>
-        <form onSubmit={handleVerify} style={{ display: 'flex', gap: '0.625rem', marginBottom: '1.25rem' }}>
-          <div className="form-group" style={{ flex: 1 }}>
+        <form onSubmit={handleVerify} style={{ display: 'flex', gap: '0.625rem', marginBottom: '1.25rem', alignItems: 'flex-end' }}>
+          <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
             <label className="form-label">Asset Code</label>
             <input
               className="form-input"
-              placeholder=""
+              placeholder="e.g. ASSET-001"
               value={assetCode}
               onChange={e => setAssetCode(e.target.value.toUpperCase())}
               disabled={loading}
             />
           </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+          <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
+            <label className="form-label">Physical Document (Optional)</label>
+            <input
+              type="file"
+              className="form-input"
+              onChange={e => setFile(e.target.files[0])}
+              disabled={loading}
+              style={{ padding: '0.3rem' }}
+            />
+          </div>
+          <div style={{ display: 'flex' }}>
             <button type="submit" className="btn btn-primary" disabled={loading || !assetCode.trim()}>
               {loading ? <span className="spinner-sm" /> : <Search size={14} />}
               {loading ? 'Verifying...' : 'Verify Asset'}
@@ -199,8 +219,8 @@ const AssetVerifyPanel = () => {
                 <>
                   <CheckCircle size={20} style={{ color: 'var(--success)' }} />
                   <div>
-                    <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--success)' }}>Asset Verified</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Metadata integrity confirmed</div>
+                    <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--success)' }}>{result.isDocument ? 'Document Verified' : 'Asset Verified'}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{result.reason || 'Metadata integrity confirmed'}</div>
                   </div>
                 </>
               ) : (
@@ -214,7 +234,7 @@ const AssetVerifyPanel = () => {
               )}
             </div>
 
-            {result.asset && (
+            {result.asset && !result.isDocument && (
               <div className="verify-result-body">
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   {[
@@ -247,6 +267,29 @@ const AssetVerifyPanel = () => {
                     </a>
                   </div>
                 )}
+              </div>
+            )}
+            
+            {result.asset && result.isDocument && (
+              <div className="verify-result-body">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div className="verify-field">
+                    <div className="verify-field-label">Asset Code</div>
+                    <div className="verify-field-value">{result.asset.assetCode}</div>
+                  </div>
+                  <div className="verify-field">
+                    <div className="verify-field-label">Asset Name</div>
+                    <div className="verify-field-value">{result.asset.name}</div>
+                  </div>
+                  <div className="verify-field" style={{ gridColumn: '1 / -1' }}>
+                    <div className="verify-field-label">Calculated Document Hash</div>
+                    <div className="verify-field-value mono" style={{ wordBreak: 'break-all', fontSize: '0.75rem' }}>{result.asset.calculatedHash}</div>
+                  </div>
+                  <div className="verify-field" style={{ gridColumn: '1 / -1' }}>
+                    <div className="verify-field-label">Stored Blockchain Hash</div>
+                    <div className="verify-field-value mono" style={{ wordBreak: 'break-all', fontSize: '0.75rem' }}>{result.asset.storedHash}</div>
+                  </div>
+                </div>
               </div>
             )}
           </div>

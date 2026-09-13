@@ -1,8 +1,10 @@
 const express = require('express');
 const crypto = require('crypto');
+const fs = require('fs');
 const prisma = require('../utils/prisma');
 const { success, error } = require('../utils/response');
 const { APP_CONFIG } = require('../config/constants');
+const upload = require('../middleware/upload');
 const { ethers } = require('ethers');
 
 const router = express.Router();
@@ -131,3 +133,52 @@ router.get('/asset/:assetCode', async (req, res, next) => {
 });
 
 module.exports = router;
+
+/**
+ * @route POST /api/v1/verify/asset/:assetCode/document
+ * @desc Verify if a physical document matches the stored asset hash
+ */
+router.post('/asset/:assetCode/document', upload.single('document'), async (req, res, next) => {
+  try {
+    const { assetCode } = req.params;
+
+    if (!req.file) {
+      return error(res, 'No document uploaded to verify', 400);
+    }
+
+    const asset = await prisma.asset.findUnique({ where: { assetCode } });
+    if (!asset) {
+      fs.unlinkSync(req.file.path);
+      return error(res, 'Asset not found', 404);
+    }
+
+    const documentHashObj = await prisma.assetMetadata.findFirst({
+      where: { assetId: asset.id, key: '_documentHash' }
+    });
+
+    if (!documentHashObj) {
+      fs.unlinkSync(req.file.path);
+      return error(res, 'This asset does not have a linked physical document.', 400);
+    }
+
+    const fileBuffer = fs.readFileSync(req.file.path);
+    const calculatedHash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+    fs.unlinkSync(req.file.path); // clean up immediately
+
+    const hashMatch = (calculatedHash === documentHashObj.value);
+
+    return success(res, {
+      assetCode: asset.assetCode,
+      name: asset.name,
+      verified: hashMatch,
+      calculatedHash,
+      storedHash: documentHashObj.value,
+      message: hashMatch ? 'Document verified successfully. No tampering detected.' : 'ASSET NOT MATCHED. The document has been tampered with or modified.'
+    });
+  } catch (err) {
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    next(err);
+  }
+});
