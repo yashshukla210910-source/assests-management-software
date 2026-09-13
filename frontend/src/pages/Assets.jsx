@@ -297,6 +297,9 @@ const AssetDetailModal = ({ asset, onClose }) => {
   const [detail, setDetail] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
 
+  const docUrl = detail?.metadata?.find(m => m.key === '_documentUrl')?.value;
+  const docHash = detail?.metadata?.find(m => m.key === '_documentHash')?.value;
+
   React.useEffect(() => {
     api.get(`/assets/${asset.id}`)
       .then(r => setDetail(r.data.data))
@@ -364,6 +367,21 @@ const AssetDetailModal = ({ asset, onClose }) => {
                   <div style={{ color: '#3f3f46' }}>Status:</div>
                   <div style={{ textTransform: 'capitalize' }}>{detail.status}</div>
                 </div>
+
+                {docHash && (
+                  <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px dashed #d4d4d8' }}>
+                    <div style={{ color: '#3f3f46', marginBottom: 4 }}>Physical Document Attachment:</div>
+                    {docUrl && (
+                      <div style={{ marginBottom: 8 }}>
+                        <a href={`${import.meta.env.VITE_API_URL || 'http://localhost:10000'}${docUrl}`} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', textDecoration: 'underline' }}>
+                          View Document
+                        </a>
+                      </div>
+                    )}
+                    <div style={{ color: '#3f3f46', fontSize: '0.75rem' }}>SHA-256 Hash:</div>
+                    <div style={{ fontSize: '0.75rem', color: '#71717a' }}>{docHash}</div>
+                  </div>
+                )}
                 
                 {detail.mintTxHash && (
                    <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center' }}>

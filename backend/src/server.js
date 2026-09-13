@@ -47,6 +47,9 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static uploads
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 // Logging
 if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('combined'));
